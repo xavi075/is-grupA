@@ -1,2 +1,2 @@
 # is-grupA
-Repositori Integració de Sistemes Grup A
+Repositori Integració de Sistemes Grup A prova
