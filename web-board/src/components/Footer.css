@@ -1,0 +1,20 @@
+.footer {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    text-align: left;
+    /* background: rgba(0, 0, 0, .6); */
+    background:  #007ABF;
+    padding: 8px 24px;
+    border-radius: 32px;
+    opacity: .95;
+    backdrop-filter: blur(8px);
+  }
+  
+  .footer h4{
+    margin: 0;
+    display: flex;
+    /* color: #09f; */
+    color: aliceblue;
+    opacity: .8;
+  }
