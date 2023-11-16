@@ -1,5 +1,6 @@
 CREATE DATABASE integracioSistemes; --crear db
 USE integracioSistemes; --establir-la com a predeterminada
+SET autocommit = 0; -- per evitar que cada sentència es tracti com una transacció independent
 
 -- crear les taules necessàries
 CREATE TABLE usuaris ( 

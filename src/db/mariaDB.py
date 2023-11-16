@@ -2,6 +2,47 @@ import mysql.connector
 import datetime
 
 class mariaDBConn:
+    """
+    Classe que proporciona una interfície per interactura amb una base de dades MariaDB.
+
+    Permet establir una connexió, realitzar les operacions bàsiques, gestionar transaccions
+    gestionar transacciones y obtener información sobre las tablas y columnas de la base de datos.
+
+    A continuació es pot veure un exemple bàsic d'ús dels mètodes de la classe. Cal tenir en compte
+    que per tal de que aquests doctests i els de tots els mètodes funcionin és necessari crear 
+    l'usuari 'ferran' amb contrasenya '3007' i s'ha d'haver creat la base de dades anomenada
+    'integracioSistemes' amb la taula provesDoctests tal i com es pot veure al fitxer 
+    'integracioSistemes.sql'.
+
+
+    >>> db = mariaDBConn('localhost', 'ferran', '3007', 'integracioSistemes')
+    >>> db.conecta()
+    >>> db.començaTransaccio()
+    >>> try:
+    ...     db.insert('provesDoctests', {'nomProva': 'prova1', 'dataHoraProva': '2002-07-30', 'dadaProva': 24.56})
+    ... except:
+    ...     db.rollback()
+    ...     print("S'ha produit un error")
+    ... else:
+    ...     db.commit()
+    ... finally:
+    ...     db.executaQuery("SELECT nomProva, dataHoraProva, dadaProva FROM provesDoctests ORDER BY id DESC LIMIT 1")
+    [('prova1', datetime.datetime(2002, 7, 30, 0, 0), Decimal('24.56'))]
+
+    >>> db.començaTransaccio()
+    >>> try:
+    ...     db.insert('provesDoctests', {'nomProva': 'prova2', 'dataHoraProva': '2002-13-30', 'dadaProva': 51.14})
+    ... except Exception as e:
+    ...     db.rollback()
+    ...     print(e)
+    ... else:
+    ...     db.commit()
+    ... finally:
+    ...     db.executaQuery("SELECT nomProva, dataHoraProva, dadaProva FROM provesDoctests ORDER BY id DESC LIMIT 1")
+    1292 (22007): Incorrect datetime value: '2002-13-30' for column `integracioSistemes`.`provesDoctests`.`dataHoraProva` at row 1
+    [('prova1', datetime.datetime(2002, 7, 30, 0, 0), Decimal('24.56'))]
+    
+    """
 
     def __init__(self, host, nomUsuari, contrasenya, baseDades):
         """
@@ -202,10 +243,10 @@ class mariaDBConn:
 
         En aquesta funció no es realitzaran doctests ja que el seu funcionament es verifica en els doctests
         de les funcions commit() i rollback().
-
-        
-        
         """
+        # assegurem que no obrim una nova transacció si n'hi ha una d'oberta
+        if self.conexio.is_connected() and self.conexio.in_transaction:
+            self.conexio.commit()
         self.conexio.start_transaction()
 
     def commit(self):
