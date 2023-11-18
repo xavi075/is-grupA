@@ -14,7 +14,6 @@ class mariaDBConn:
     'integracioSistemes' amb la taula provesDoctests tal i com es pot veure al fitxer 
     'integracioSistemes.sql'.
 
-
     >>> db = mariaDBConn('localhost', 'ferran', '3007', 'integracioSistemes')
     >>> db.conecta()
     >>> db.començaTransaccio()
@@ -148,6 +147,40 @@ class mariaDBConn:
         >>> db.desconecta()
         """
         cursor = self.conexio.cursor()
+        cursor.execute(query, valors)
+        resultat = cursor.fetchall()
+        cursor.close()
+        return resultat
+    
+    def fetch(self, query, valors = None):
+        """
+        Executa operacions select SQL per consultar dades de la base de dades a la base de dades i
+        obtenir-les en una estructura més agradable que en el mètode executaQuery.
+
+        Args:
+            query (string): consulta SQL a executar.
+            valors (tuple, optional): valors d'enllaç (per a consultes parametritzades)
+
+        Returns:
+            list of dict: llista de diccionaris de les dades obtingudes. Cada fila de la base de dades es
+                correspon a un diccionari.
+
+        >>> db = mariaDBConn('localhost', 'ferran', '3007', 'integracioSistemes')
+        >>> db.conecta()
+        >>> db.insert('provesDoctests', {'nomProva': 'prova1', 'dataHoraProva': '2002-07-30', 'dadaProva': 1})
+        >>> db.insert('provesDoctests', {'nomProva': 'prova2', 'dataHoraProva': '2002-07-30', 'dadaProva': 2})
+        >>> db.insert('provesDoctests', {'nomProva': 'prova3', 'dataHoraProva': '2002-07-30', 'dadaProva': 3})
+        >>> db.fetch("SELECT nomProva, dataHoraProva, dadaProva FROM provesDoctests ORDER BY id DESC LIMIT 3")
+        [{'nomProva': 'prova3', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('3.00')}, {'nomProva': 'prova2', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('2.00')}, {'nomProva': 'prova1', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('1.00')}]
+        >>> db.fetch("SELECT nomProva, dataHoraProva, dadaProva FROM provesDoctests WHERE dataHoraProva = %s ORDER BY id DESC LIMIT 3", (datetime.datetime(2002, 7, 30, 0, 0), ))
+        [{'nomProva': 'prova3', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('3.00')}, {'nomProva': 'prova2', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('2.00')}, {'nomProva': 'prova1', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('1.00')}]
+        >>> db.fetch("SELECT nomProva, dataHoraProva, dadaProva FROM provesDoctests WHERE nomProva = %s ORDER BY id DESC LIMIT 1", ('prova2', ))
+        [{'nomProva': 'prova2', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('2.00')}]
+        >>> db.fetch("SELECT nomProva, dataHoraProva, dadaProva FROM provesDoctests WHERE dadaProva >= %s ORDER BY id DESC LIMIT 2", (2, ))
+        [{'nomProva': 'prova3', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('3.00')}, {'nomProva': 'prova2', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('2.00')}]
+        >>> db.desconecta()
+        """
+        cursor = self.conexio.cursor(dictionary=True)
         cursor.execute(query, valors)
         resultat = cursor.fetchall()
         cursor.close()
