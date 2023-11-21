@@ -1,5 +1,6 @@
-#include <avr/io.h>
+// #include <avr/io.h>
 #include "adc.h"
+#include <Arduino.h>
 
 void  setup_ADC(uint8_t adc_input,uint8_t v_ref,uint8_t adc_pre){
   uint8_t adc,adcd,vref,pre;

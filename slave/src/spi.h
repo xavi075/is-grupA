@@ -1,7 +1,8 @@
 #ifndef __SPI_H_
 #define __SPI_H_
 
-#include <avr/io.h>
+// #include <avr/io.h>
+#include <Arduino.h>
 
 void spi_init();
 void spi_tx( uint8_t byte );

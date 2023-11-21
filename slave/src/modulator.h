@@ -1,7 +1,7 @@
 #ifndef MODULATOR_H
 #define MODULATOR_H
 
-#include <stdbool.h>
+#include <Arduino.h>
 
 void modulator_init(void);
 

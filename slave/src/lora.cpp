@@ -1,7 +1,7 @@
 #include "lora.h"
 #include "lora_mem.h"
 #include "spi.h"
-#include "printf2serial.h"
+// #include "printf2serial.h"
 
 
 //Buffer for receiving data
@@ -28,11 +28,11 @@ uint8_t lora_init() {
 	DDR_RST |= RST;
 
 	PORT_RST |= RST;
-	_delay_ms(50);
+	// _delay_ms(50);
 	PORT_RST &= ~RST;
-	_delay_ms(1);
+	// _delay_ms(1);
 	PORT_RST |= RST;
-	_delay_ms(10);
+	// _delay_ms(10);
 
 	PORT_SS |= SS;
 

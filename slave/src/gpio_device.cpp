@@ -1,5 +1,6 @@
-#include <avr/io.h>
+// #include <avr/io.h>
 #include "gpio_device.h"
+#include <stdint.h>
 
 pin_t pin_bind(volatile uint8_t *port, uint8_t pin, pin_direction_t d) {
     pin_t pin_aux;

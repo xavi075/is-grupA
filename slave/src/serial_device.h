@@ -2,7 +2,8 @@
 #define SERIAL_DEVICE_H
 
 #include <stdint.h>
-#include <stdbool.h>
+// #include <stdbool.h>
+#include <Arduino.h>
 
 void serial_open(void);
 void serial_close(void);

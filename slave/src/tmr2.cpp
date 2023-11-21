@@ -1,5 +1,5 @@
-#include <avr/io.h>//it includes <avr/sfr_defs.h>, <avr/portpins.h>, <avr/common.h>, <avr/version.h>
-
+// #include <avr/io.h>//it includes <avr/sfr_defs.h>, <avr/portpins.h>, <avr/common.h>, <avr/version.h>
+// #include "Arduino.h"
 #include "tmr2.h"
 // 249 8
 void setup_tmr2(uint8_t ocr2a,uint16_t tmr2_pre){

@@ -2,7 +2,8 @@
 #define GPIO_DEVICE_H
 
 #include <stdio.h>
-#include <stdbool.h>
+// #include <stdbool.h>
+#include <Arduino.h>
 
 typedef enum {Input, InputNP, Output} pin_direction_t;
 

@@ -1,4 +1,5 @@
-#include <avr/io.h>
+// #include <avr/io.h>
+#include <Arduino.h>
 #include <stdio.h>
 
 #include "printf2serial.h"
@@ -11,7 +12,8 @@ static int uart_putchar(char c, FILE *stream){
   return 0;
 }
 
-static FILE mystdout = FDEV_SETUP_STREAM(uart_putchar, NULL,_FDEV_SETUP_WRITE);
+// static FILE mystdout = FDEV_SETUP_STREAM(uart_putchar, NULL,_FDEV_SETUP_WRITE);
+static FILE mystdout = *fdevopen(uart_putchar, NULL);
 
 void init_stdout(void){
   stdout = &mystdout;

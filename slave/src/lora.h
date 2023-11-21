@@ -1,9 +1,10 @@
 #ifndef __LORA_H_
 #define __LORA_H_
 
-#include <avr/io.h>
+// #include <avr/io.h>
+#include <Arduino.h>
 #include <util/delay.h>
-#include <avr/interrupt.h>
+// #include <avr/interrupt.h>
 
 //==============================================
 //=================== CONFIG ===================
@@ -16,9 +17,9 @@
 #define DDR_SS		DDRB
 #define PORT_SS		PORTB
 
-#define RST		(1<<PB1)
-#define DDR_RST		DDRB
-#define PORT_RST	PORTB
+#define RST		(1<<PD5)
+#define DDR_RST		DDRD
+#define PORT_RST	PORTD
 
 #define SCK		(1<<PB5)
 #define DDR_SCK		DDRB
