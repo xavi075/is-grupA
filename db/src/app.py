@@ -10,11 +10,19 @@ resposta sempre tindrà el mateix format:
     "error" = "descripció del error"
 }   
 ```
+
+Llibreries necessàries instal·lació:
+
+```
+pip3 install pytz
+```
 """
 
 from flask import Flask, request, jsonify
 from mariaDB import mariaDBConn
-
+import hashlib
+from datetime import datetime
+import pytz
 
 
 app = Flask(__name__)
@@ -91,7 +99,11 @@ def inserirProva():
 @app.route('/inserirUsuari', methods = ['POST'])
 def inserirUsuari():
     """
-    Endpoint de Flask per inserir dades a la taula usuaris.
+    Endpoint de Flask per inserir dades a la taula usuaris. Cal tenir en compte que és necessari
+    enviar la contrasenya sense aplicar cap funció de hash, ja que la mateixa funció és la que
+    s'encarrega d'aplicar-lo. Per a un correcte funcionament del sistema, serà necessari utilitzar
+    un protocol https. Al inserir un usuari, s'insereix a la base de dades la data utf de creació
+    de l'usuari.
 
     Mètode: POST
     Format de dades esperat: JSON
@@ -129,26 +141,33 @@ def inserirUsuari():
 
         email = dades_json.get('email')
         nomUsuari = dades_json.get('nomUsuari')
+        pwd = dades_json.get('contrasenya')
+        dataCreacio_utc = datetime.now(pytz.utc)
 
         if email is None:
-            return jsonify({'success': False, 'error': f'Camp "email" no especificat en el JSON'}), 400
+            return jsonify({'success': False, 'error': f"Camp 'email' no especificat en el JSON"}), 400
         elif nomUsuari is None:
-            return jsonify({'error': f'Camp "nomUsuari" no especificat en el JSON'}), 400
+            return jsonify({'success': False, 'error': f"Camp 'nomUsuari' no especificat en el JSON"}), 400
+        elif pwd is None:
+            return jsonify({'success': False, 'error': f"Camp 'contrasenya' no especificat en el JSON"}), 400
         
         else:
+            # apliquem funció hash a la contrasenya
+            hashedPwd = hashlib.sha256(pwd.encode()).hexdigest()
+
             db.començaTransaccio()
             try:
-                db.insert('usuaris', {'email': email, 'nomUsuari': nomUsuari})
+                db.insert('usuaris', {'email': email, 'nomUsuari': nomUsuari, 'contrasenya_hash': hashedPwd, 'dataCreacioUsuari': dataCreacio_utc})
             except Exception as e:
                 db.rollback()
-                return jsonify({'success': False, 'error': f'Error al inserir dades: {str(e)}'}), 500
+                return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
             else:
                 db.commit()
                 idUsuariInsertat = db.executaQuery("SELECT id FROM usuaris WHERE email = %s", (email, ))[0][0]
                 return jsonify({'success': True, 'idUsuariInsertat': idUsuariInsertat})
     
     except Exception as e:
-        return jsonify({'success': False, 'error': f'Error no controlat: {str(e)}'}), 500
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
 
 @app.route('/inserirDispositiu', methods = ['POST'])
 def inserirDispositiu():
@@ -182,6 +201,34 @@ def inserirDispositiu():
         - Error al inserir les dades a la base de dades.
         - Error no controlat.
     """
+    try: 
+        try: 
+            dades_json = request.json
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
+
+        idUsuari = dades_json.get('idUsuariPropietari')
+        nomDispositiu = dades_json.get('nomDispositiu')
+
+        if idUsuari is None:
+            return jsonify({'success': False, 'error': f"Camp 'idUsuari' no especificat en el JSON"}), 400
+        elif nomDispositiu is None:
+            return jsonify({'success': False, 'error': f"Camp 'nomDispositiu' no especificat en el JSON"}), 400
+        
+        else:
+            db.començaTransaccio()
+            try:
+                db.insert('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu})
+            except Exception as e:
+                db.rollback()
+                return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+            else:
+                db.commit()
+                idDispositiuInsertat = db.executaQuery("SELECT id FROM dispositius WHERE idUsuariPropietari = %s AND nomDispositiu = %s", (idUsuari, nomDispositiu))[0][0]
+                return jsonify({'success': True, 'iDispositiuInsertat': idDispositiuInsertat})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
 
 @app.route('/inserirDada', methods = ['POST'])
 def inserirDadesDispositiu():
@@ -196,18 +243,16 @@ def inserirDadesDispositiu():
     POST /inserirDada
     {
         "idDispositiu": 1,
-        "dataHora": "2023-11-16 12:30:00",
         "dadaHum": 45.14,
         "dadaTemp": 16.2
     }
     ```
 
     Respostes possibles:
-    - 200 OK: Dades insertades correctament. Especifica el id intern que se li ha assignat a la dada insertada.
+    - 200 OK: Dades insertades correctament.
         ```json
         {
             "success" = True,
-            "idDadaInsertada": id
         }   
         ```
     - 400 Bad Request:
@@ -217,9 +262,40 @@ def inserirDadesDispositiu():
         - Error al inserir les dades a la base de dades.
         - Error no controlat.
     """
+    try: 
+        try: 
+            dades_json = request.json
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
 
-@app.route('/obtenirUsuaris', method = ['GET'])
-def obtenirUsuaris():
+        idDispositiu = dades_json.get('idDispositiu')
+        dataCreacio_utc = datetime.now(pytz.utc)
+        dadaHum = dades_json.get('dadaHum')
+        dadaTemp = dades_json.get('dadaTemp')
+
+        if idDispositiu is None:
+            return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
+        elif dadaHum is None:
+            return jsonify({'success': False, 'error': f"Camp 'dadaHum' no especificat en el JSON"}), 400
+        elif dadaTemp is None:
+            return jsonify({'success': False, 'error': f"Camp 'dadaTemp' no especificat en el JSON"}), 400
+        
+        else:
+            db.començaTransaccio()
+            try:
+                db.insert('dadesDispositius', {'idDispositiu': idDispositiu, 'dataHora': dataCreacio_utc, 'dadaHum': dadaHum, 'dadaTemp': dadaTemp})
+            except Exception as e:
+                db.rollback()
+                return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+            else:
+                db.commit()
+                return jsonify({'success': True})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+#@app.route('/obtenirUsuaris', method = ['GET'])
+#def obtenirUsuaris():
     """
     Endpoint de Flask per obtenir dades de la taula usuaris. Permet obtenir les dades d'un usuari
     en concret o de tots els usuaris. Cal tenir en compte que mai es poden obtenir les contrasenyes
@@ -260,8 +336,8 @@ def obtenirUsuaris():
         - Error no controlat.
     """
 
-@app.route('/verificaLogIn', method = ['GET'])
-def verificaLogIn():
+#@app.route('/verificaLogIn', method = ['GET'])
+#def verificaLogIn():
     """
     Endpoint de Flask per obtenir si les credencials de log in es corresponen a les credencials
     de la base de dades. 
@@ -293,8 +369,8 @@ def verificaLogIn():
         - Error no controlat.
     """
         
-@app.route('obtenirDispositius', method = ['GET'])
-def obtenirDispositius():
+#@app.route('obtenirDispositius', method = ['GET'])
+#def obtenirDispositius():
     """
     Endpoint de Flask per obtenir dades de la taula dispositius.
 
@@ -344,8 +420,8 @@ def obtenirDispositius():
         - Error no controlat.
     """
 
-@app.route('obtenirDadesDispositius', method = ['GET'])
-def obtenirDadesDispositius():
+#@app.route('obtenirDadesDispositius', method = ['GET'])
+#def obtenirDadesDispositius():
     """
     Endpoint de Flask per obtenir dades de la taula dadesDispositius.
 
@@ -400,8 +476,8 @@ def obtenirDadesDispositius():
         - Error no controlat.
     """
 
-@app.route('obtenirUltimaDadaDispositiu', method = ['GET'])
-def obtenirUltimaDadaDispositiu():
+#@app.route('obtenirUltimaDadaDispositiu', method = ['GET'])
+#def obtenirUltimaDadaDispositiu():
     """
     Endpoint de Flask per obtenir les últimes dades de la taula dadesDispositius.
 
