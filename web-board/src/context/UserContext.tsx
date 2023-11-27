@@ -14,12 +14,6 @@ export const UserContextProvider: React.FC<{ children: ReactNode }> = ({ childre
     () => window.sessionStorage.getItem('username')
   );
   const [isLoggedIn, setLoggedIn] = useState<boolean>(!!username);
-
-  // const logout = () => {
-  //   window.sessionStorage.removeItem('username')
-  //   setUserName(null)
-  //   setLoggedIn(false)
-  // }
   
   return (
     <UserContext.Provider value={{ username, isLoggedIn,setUserName, setLoggedIn }}>
