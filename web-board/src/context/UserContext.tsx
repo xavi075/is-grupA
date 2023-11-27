@@ -10,8 +10,16 @@ interface UserContextProps {
 const UserContext = createContext<UserContextProps | undefined>(undefined);
 
 export const UserContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [username, setUserName] = useState<string | null>(null);
-  const [isLoggedIn, setLoggedIn] = useState<boolean>(false);
+  const [username, setUserName] = useState<string | null>(
+    () => window.sessionStorage.getItem('username')
+  );
+  const [isLoggedIn, setLoggedIn] = useState<boolean>(!!username);
+
+  // const logout = () => {
+  //   window.sessionStorage.removeItem('username')
+  //   setUserName(null)
+  //   setLoggedIn(false)
+  // }
   
   return (
     <UserContext.Provider value={{ username, isLoggedIn,setUserName, setLoggedIn }}>

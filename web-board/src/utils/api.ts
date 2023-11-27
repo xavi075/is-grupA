@@ -6,7 +6,7 @@ const headers = {
     'Content-Type': 'application/json'
   };
 
-export default function login(username:string, password: string): Promise<ILogged> {
+export default function loginRequest(username:string, password: string): Promise<ILogged> {
   
     // return axios.get<ILogged>(`${ENDPOINT}/login`, { headers })
     //   .then((response) => response.data)

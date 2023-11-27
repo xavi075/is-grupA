@@ -9,6 +9,7 @@ import { HomePage } from './pages/home/HomePage';
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { fas } from '@fortawesome/free-solid-svg-icons'
 import { LoginPage } from './pages/login/LoginPage';
+import { ProfilePage } from './pages/profile/ProfilePage';
 // import { UserContextProvider } from './context/UserContext';
 library.add(fas)
 
@@ -27,6 +28,7 @@ function App() {
             <Route path="/parameters" element={<ParametersPage />} />
             <Route path="/home" element={<HomePage />} />
             <Route path="/" element={<LoginPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Routes>
           <Footer />
         </div>
