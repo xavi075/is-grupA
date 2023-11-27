@@ -2,7 +2,7 @@
 export function ParametersPage() {
     return (
         <div>
-            Sonar page
+            Parameters page
         </div>
     )
 }

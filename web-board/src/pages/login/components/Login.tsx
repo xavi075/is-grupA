@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Form, Button } from 'react-bootstrap';
 import { useUser } from '../../../context/UserContext';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 // import loginRequest from '../../../utils/api';
 import { ILogged } from '../../../utils/interfaces';
+import './Login.css';
 
 
 const Login =  () => {
@@ -31,50 +33,57 @@ const Login =  () => {
     setLoggedIn(!!username);
   };
 
+  const handleRegister = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault(); //Nomes si no cal tornar a pagina login
+    // TO-DO: agafar usuari i password i enviar peticio POST register
+    // TO-DO: rebre resposta peticio
+    // TO-DO: login?
+  }
+
   const [expanded, setExpanded] = useState(true);
 
     return (
       <>
       {expanded &&(
-        <div>
-          <h2>Inicia sessió</h2>
-            <Form onSubmit={handleLogin}>
+        <div className="form-container">
+            <Form className="custom-form" onSubmit={handleLogin}>
+            <h1>Inicia sessió</h1>
             <Form.Group controlId="formBasicUsername">
-              <Form.Label>Nom d'usuari </Form.Label>
-              <Form.Control type="text" placeholder="Nom d'usuari" value={username} onChange={(e) => setUsername(e.target.value)} />
+              <Form.Label className="custom-label"><FontAwesomeIcon icon="user-large" style={{ color: "#007ABF" }} /> Nom d'usuari </Form.Label>
+              <Form.Control className="custom-input" type="text" placeholder="Nom d'usuari" value={username} onChange={(e) => setUsername(e.target.value)} />
             </Form.Group>
 
             <Form.Group controlId="formBasicPassword">
-              <Form.Label>Contrassenya </Form.Label>
-              <Form.Control type="password" placeholder="Contrassenya" value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Form.Label className="custom-label"><FontAwesomeIcon icon="key" style={{ color: "#007ABF" }} /> Contrassenya </Form.Label>
+              <Form.Control className="custom-input" type="password" placeholder="Contrassenya" value={password} onChange={(e) => setPassword(e.target.value)} />
             </Form.Group>
 
-            <Button variant="primary" type="submit">
-              Iniciar Sessió
+            <Button className="form-button" variant="primary" type="submit">
+              Iniciar Sessió <FontAwesomeIcon icon="right-to-bracket" style={{ color: "#FFFFFF" }} />
             </Button>
+            <div className="login-register" onClick={() => setExpanded(prevState => !prevState) }><span>Registra un nou compte</span></div>
           </Form>
-          <div className={`${expanded ? 'expanded' : ''}`} onClick={() => setExpanded(prevState => !prevState) }><p >Registra un nou compte</p></div>
         </div>
       )}
       {!expanded &&(
-        <div>
-          <h2>Registre d'un nou usuari</h2>
-            <Form onSubmit={handleLogin}>
+        <div className="form-container">
+            <Form className="custom-form" onSubmit={handleRegister}>
+            <h1>Registra un nou usuari</h1>
             <Form.Group controlId="formBasicUsername">
-              <Form.Label>Nom d'usuari </Form.Label>
-              <Form.Control type="text" placeholder="Nom d'usuari" />
+              <Form.Label className="custom-label"> <FontAwesomeIcon icon="user-large" style={{ color: "#007ABF" }} /> Nom d'usuari </Form.Label>
+              <Form.Control className="custom-input" type="text" placeholder="Nom d'usuari" />
             </Form.Group>
 
             <Form.Group controlId="formBasicPassword">
-              <Form.Label>Nova Contrassenya </Form.Label>
-              <Form.Control type="password" placeholder="Contrassenya" />
+              <Form.Label className="custom-label"><FontAwesomeIcon icon="key" style={{ color: "#007ABF" }} /> Nova Contrassenya </Form.Label>
+              <Form.Control className="custom-input" type="password" placeholder="Contrassenya" />
             </Form.Group>
 
-            <Button variant="primary" type="submit">
-              Registra't
+            <Button className="form-button" variant="primary" type="submit">
+              Registra't <FontAwesomeIcon size='sm' icon="user-plus" style={{ color: "#FFFFFF" }} />
             </Button>
+            <div className="login-register" onClick={() => setExpanded(prevState => !prevState) }><span>Inicia sessió d'un compte ja existent</span></div>
           </Form>
-          <div className={`${expanded ? 'expanded' : ''}`} onClick={() => setExpanded(prevState => !prevState) }><p >Inicia sessió d'un compte ja existent</p></div>
         </div>
       )}
       </>
