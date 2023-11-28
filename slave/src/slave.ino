@@ -148,7 +148,7 @@ void envia(void){
 }
 
 void envia_resposta(void){
-  pinMode(18, OUTPUT); //LED Blau
+  pinMode(18, OUTPUT); //LED Vermell
   lora_putd(avg_str, 20);
 }
 
