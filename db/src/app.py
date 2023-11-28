@@ -294,8 +294,69 @@ def inserirDadesDispositiu():
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
 
-#@app.route('/obtenirUsuaris', method = ['GET'])
-#def obtenirUsuaris():
+@app.route('/verificaLogIn', methods = ['POST'])
+def verificaLogIn():
+    """
+    Endpoint de Flask per obtenir si les credencials de log in es corresponen a les credencials
+    de la base de dades. 
+
+    Mètode: PUT
+    Format de dades esperat: JSON
+
+    Exemple de sol·licitud:
+    ```
+    POST /inserirDada
+    {
+        "emailUsuari": "usuari@exemple.com,
+        "contrasenya": "1234"
+    }
+    ```
+
+    Respostes possibles:
+    - 200 OK: Indica si s'ha trobat una coincidència de les credencials a la base de dades
+        ```json
+        {
+            "success" = True,
+            "credencialsTrobades": True / False
+        }
+        ```
+    - 400 Bad Request: Si es proporcionen paràmetres incorrectes.
+        - Si no es proporciona un JSON en la sol·licitud.
+        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
+    - 500 Internal Server Error: 
+        - Error al consultar la base de dades.
+        - Error no controlat.
+    """
+    try:
+        try: 
+            dades_json = request.json
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
+
+        email = dades_json.get('emailUsuari')
+        contrasenya = dades_json.get('contrasenya')
+
+        if email is None:
+            return jsonify({'success': False, 'error': f"Camp 'email' no especificat en el JSON"}), 400
+        elif contrasenya is None:
+            return jsonify({'success': False, 'error': f"Camp 'contrasenya' no especificat en el JSON"}), 400
+        
+        try: 
+            contrasenya_hash_db = db.executaQuery("SELECT contrasenya_hash FROM usuaris WHERE email = %s", (email, ))[0][0]
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+        
+        else:     
+            contrasenya_hash_usuari = hashlib.sha256(contrasenya.encode()).hexdigest()
+            return jsonify({'success': True, 'credencialsTrobades': contrasenya_hash_db == contrasenya_hash_usuari})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+
+@app.route('/obtenirUsuaris', methods = ['GET'])
+def obtenirUsuaris():
     """
     Endpoint de Flask per obtenir dades de la taula usuaris. Permet obtenir les dades d'un usuari
     en concret o de tots els usuaris. Cal tenir en compte que mai es poden obtenir les contrasenyes
@@ -335,41 +396,42 @@ def inserirDadesDispositiu():
         - Error al consultar la base de dades.
         - Error no controlat.
     """
+    try:
+        emailUsuari = request.args.get('emailUsuari')
 
-#@app.route('/verificaLogIn', method = ['GET'])
-#def verificaLogIn():
-    """
-    Endpoint de Flask per obtenir si les credencials de log in es corresponen a les credencials
-    de la base de dades. 
+        if emailUsuari:
+            # Obtenir les dades d'un usuari específic
+            query = "SELECT id, email, nomUsuari, dataCreacioUsuari FROM usuaris WHERE email = %s"
+            params = (emailUsuari, )
+        else:
+            # Obtenir les dades de tots els usuaris
+            query = "SELECT id, email, nomUsuari, dataCreacioUsuari FROM usuaris"
+            params = ()
 
-    Mètode: GET
-    Paràmetres de la URL:
-    - emailUsuari [obligatori]: email indicat per l'usuari que es vol loguejar.
-    - contrasenya [obligatori]: contrasenya indicada per l'usuari que es vol loguejar. Aquesta ha de ser sense hash,
-        ja que el procés de controlar els hash de la contrasenya es fa en el back-end.
+        try: 
+            dades_usuaris = db.executaQuery(query, params)
 
-    Exemples de sol·licitud
-      ```
-      GET /verificaLogIn?emailUsuari=usuari@exemple.com&contrasenya=pwd
-      ```
-
-    Respostes possibles:
-    - 200 OK: Indica si s'ha trobat una coincidència de les credencials a la base de dades
-        ```json
-        {
-            "success" = True,
-            "credencialsTrobades": True / False
-        }
-        ```
-    - 400 Bad Request: Si es proporcionen paràmetres incorrectes.
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
-    - 500 Internal Server Error: 
-        - Error al consultar la base de dades.
-        - Error no controlat.
-    """
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
         
-#@app.route('obtenirDispositius', method = ['GET'])
+        else:     
+            dades_formatejades = [
+                {
+                    "id": usuari[0],
+                    "email": usuari[1],
+                    "nomUsuari": usuari[2],
+                    "dataCreacioUsuari": usuari[3].strftime("%Y-%m-%d %H:%M:%S") if usuari[3] else None
+                }
+                for usuari in dades_usuaris
+            ]
+            return jsonify({'success': True, 'dades': dades_formatejades})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+
+        
+#@app.route('obtenirDispositius', methods = ['GET'])
 #def obtenirDispositius():
     """
     Endpoint de Flask per obtenir dades de la taula dispositius.
@@ -420,7 +482,7 @@ def inserirDadesDispositiu():
         - Error no controlat.
     """
 
-#@app.route('obtenirDadesDispositius', method = ['GET'])
+#@app.route('obtenirDadesDispositius', methods = ['GET'])
 #def obtenirDadesDispositius():
     """
     Endpoint de Flask per obtenir dades de la taula dadesDispositius.
@@ -476,7 +538,7 @@ def inserirDadesDispositiu():
         - Error no controlat.
     """
 
-#@app.route('obtenirUltimaDadaDispositiu', method = ['GET'])
+#@app.route('obtenirUltimaDadaDispositiu', methods = ['GET'])
 #def obtenirUltimaDadaDispositiu():
     """
     Endpoint de Flask per obtenir les últimes dades de la taula dadesDispositius.
