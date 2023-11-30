@@ -95,7 +95,6 @@ def inserirProva():
 
 # ¡¡¡¡ERROR!!!!: QUAN HI HA ALGUN ERROR INSERINT UN USUARI, S'AUGMENTA EL ID
 # ex: inserir correctament -> id = 1. inserir incorrectament. inserir correctament -> ¡¡¡¡id = 3!!!!
-# afegir que l'usuari passi contrasenya i es guardi hashejada
 @app.route('/inserirUsuari', methods = ['POST'])
 def inserirUsuari():
     """
@@ -354,7 +353,6 @@ def verificaLogIn():
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
 
-
 @app.route('/obtenirUsuaris', methods = ['GET'])
 def obtenirUsuaris():
     """
@@ -428,11 +426,9 @@ def obtenirUsuaris():
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
-
-
-        
-#@app.route('obtenirDispositius', methods = ['GET'])
-#def obtenirDispositius():
+       
+@app.route('/obtenirDispositius', methods = ['GET'])
+def obtenirDispositius():
     """
     Endpoint de Flask per obtenir dades de la taula dispositius.
 
@@ -481,9 +477,64 @@ def obtenirUsuaris():
         - Error al consultar la base de dades.
         - Error no controlat.
     """
+    try:
+        emailUsuari = request.args.get('emailUsuari')
+        nomDispositiu = request.args.get('nomDispositiu')
+        idDispositiu = request.args.get('idDispositiu')
 
-#@app.route('obtenirDadesDispositius', methods = ['GET'])
-#def obtenirDadesDispositius():
+        if emailUsuari:
+            if nomDispositiu:
+                # Obtenir les dades d'un nom de dispositiu i usuari
+                query = """SELECT d.id, d.idUsuariPropietari, d.nomDispositiu
+                        FROM dispositius d 
+                        INNER JOIN usuaris u 
+                            ON u.id = d.idUsuariPropietari 
+                        WHERE u.email = %s AND d.nomDispositiu = %s"""
+                params = (emailUsuari, nomDispositiu)
+
+            else:
+                # Obtenir les dades d'un usuari específic
+                query = """SELECT d.id, d.idUsuariPropietari, d.nomDispositiu
+                        FROM dispositius d 
+                        INNER JOIN usuaris u 
+                            ON u.id = d.idUsuariPropietari 
+                        WHERE u.email = %s"""
+                params = (emailUsuari, )
+
+        elif idDispositiu:
+            # Obtenir les dades d'un dispositiu específic
+                query = """SELECT id, idUsuariPropietari, nomDispositiu
+                        FROM dispositius
+                        WHERE id = %s"""
+                params = (idDispositiu, )
+        
+        else:
+            # Obtenir les dades de tots els usuaris
+            query = "SELECT id, idUsuariPropietari, nomDispositiu FROM dispositius"
+            params = ()
+
+        try: 
+            dades_dispositius = db.executaQuery(query, params)
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+        
+        else:     
+            dades_formatejades = [
+                {
+                    "id": dispo[0],
+                    "idUsuariPropietari": dispo[1],
+                    "nomDispositiu": dispo[2]
+                }
+                for dispo in dades_dispositius
+            ]
+            return jsonify({'success': True, 'dades': dades_formatejades})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+@app.route('/obtenirDadesDispositius', methods = ['GET'])
+def obtenirDadesDispositius():
     """
     Endpoint de Flask per obtenir dades de la taula dadesDispositius.
 
@@ -537,21 +588,116 @@ def obtenirUsuaris():
         - Error al consultar la base de dades.
         - Error no controlat.
     """
+    try:
+        emailUsuari = request.args.get('emailUsuari')
+        idDispositiu = request.args.get('idDispositiu')
+        dataInici = request.args.get('dataInici')
+        dataFi = request.args.get('dataFi')
 
-#@app.route('obtenirUltimaDadaDispositiu', methods = ['GET'])
-#def obtenirUltimaDadaDispositiu():
+        if emailUsuari:
+            if dataInici:
+                if dataFi:
+                    #obtenir les dades d'un interval de temps d'un usuari
+                    query = """SELECT dades.idDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
+                        FROM dadesDispositius dades 
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = dades.idDispositiu 
+                        INNER JOIN usuaris user 
+                            ON dispo.idUsuariPropietari = user.id 
+                        WHERE user.email = %s
+                            AND dataHora >= %s
+                            AND dataHora <= %s"""
+                    params = (emailUsuari, dataInici, dataFi)
+
+                else:
+                    #obtenir les dades a partir d'una data d'un usuari
+                    query = """SELECT dades.idDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
+                        FROM dadesDispositius dades 
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = dades.idDispositiu 
+                        INNER JOIN usuaris user 
+                            ON dispo.idUsuariPropietari = user.id 
+                        WHERE user.email = %s
+                            AND dataHora >= %s"""
+                    params = (emailUsuari, dataInici)
+            else:
+                #obtenir totes les dades d'un usuari
+                query = """SELECT dades.idDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
+                        FROM dadesDispositius dades 
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = dades.idDispositiu 
+                        INNER JOIN usuaris user 
+                            ON dispo.idUsuariPropietari = user.id 
+                        WHERE user.email = %s"""
+                params = (emailUsuari, )
+
+        elif idDispositiu:
+            if dataInici:
+                if dataFi:
+                    #obtenir les dades d'un interval de temps d'un dispositiu
+                    query = """SELECT dades.idDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
+                            FROM dadesDispositius dades 
+                            INNER JOIN dispositius dispo 
+                                ON dispo.id = dades.idDispositiu 
+                            WHERE idDispositiu = %s 
+                                AND dataHora >= %s
+                                AND dataHora <= %s"""
+                    params = (idDispositiu, dataInici, dataFi)
+
+                else:
+                    #obtenir les dades a partir d'una data d'un dispositiu
+                    query = """SELECT dades.idDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
+                            FROM dadesDispositius dades 
+                            INNER JOIN dispositius dispo 
+                                ON dispo.id = dades.idDispositiu 
+                            WHERE idDispositiu = %s 
+                                AND dataHora >= %s"""
+                    params = (idDispositiu, dataInici)
+
+            else: 
+                #obtenir totes les dades d'un dispositiu
+                query = """SELECT dades.idDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
+                        FROM dadesDispositius dades 
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = dades.idDispositiu 
+                        WHERE idDispositiu = %s"""
+                params = (idDispositiu, )
+        
+        else:
+            # Obtenir totes les dades
+            query = "SELECT idDispositiu, dataHora, dadaHum, dadaTemp FROM dadesDispositius"
+            params = ()
+
+        try: 
+            dades = db.executaQuery(query, params)
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+        
+        else:     
+            dades_formatejades = [
+                {
+                    "idDispositiu": dada[0],
+                    "dataHora": dada[1],
+                    "dadaHum": dada[2],
+                    "dadaTemp": dada[3]
+                }
+                for dada in dades
+            ]
+            return jsonify({'success': True, 'dades': dades_formatejades})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+@app.route('/obtenirUltimaDadaDispositiu', methods = ['GET'])
+def obtenirUltimaDadaDispositiu():
     """
     Endpoint de Flask per obtenir les últimes dades de la taula dadesDispositius.
 
     Mètode: GET
     Paràmetres de la URL:
-    - emailUsuari [opcional]: email de l'usuari del qual es vol obtenir les dades dels seus dispositius assignats.
-    - idDispositiu [opcional]: id del dispositiu del qual es vol obtenir la dada.
+    - idDispositiu [obligatori]: id del dispositiu del qual es vol obtenir la dada.
 
-    - Obtenir la última dada de tots els dispositius d'un usuari:
-      ```
-      GET /obtenirUltimaDadaDispositiu?emailUsuari=usuari@exemple.com
-      ```
     - Obtenir la última dada d'un dispositiu en concret:
       ```
       GET /obtenirUltimaDadaDispositiu?idDispositiu=id
@@ -565,8 +711,6 @@ def obtenirUsuaris():
             "dades": 
             [
                 {"idDispositiu": 1, "dataHora": "2023-11-16 12:31:00", dadaHum: 15, dadaTemp: 14},
-                {"idDispositiu": 2, "dataHora": "2023-11-16 12:31:00", dadaHum: 7.9, dadaTemp: 2},
-                ...
             ]
         }
         ```
@@ -577,6 +721,44 @@ def obtenirUsuaris():
         - Error al consultar la base de dades.
         - Error no controlat.
     """
+    try:
+        idDispositiu = request.args.get('idDispositiu')
+
+        if idDispositiu:
+            query = """SELECT idDispositiu, dataHora, dadaHum, dadaTemp 
+            FROM dadesDispositius 
+            WHERE idDispositiu = %s
+            ORDER BY dataHora DESC 
+            LIMIT 1"""
+            params = (idDispositiu, )
+        
+        else:
+            return jsonify({'success': False, 'error': f"'idDispositiu' no especificat"}), 400
+
+        try: 
+            dades = db.executaQuery(query, params)
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+        
+        else:     
+            if len(dades) == 0:
+                dades_formatejades = []
+            else:
+                dada = dades[0]
+                dades_formatejades = [
+                    {
+                        "idDispositiu": dada[0],
+                        "dataHora": dada[1],
+                        "dadaHum": dada[2],
+                        "dadaTemp": dada[3]
+                    }
+                ]
+            return jsonify({'success': True, 'dades': dades_formatejades})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host = '0.0.0.0', port = 5000)
+

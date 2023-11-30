@@ -17,7 +17,6 @@ CREATE TABLE dispositius (
     nomDispositiu VARCHAR(50) NOT NULL,
     FOREIGN KEY (idUsuariPropietari) REFERENCES usuaris (id)  
 );
--- AFEGIR TRIGGER QUE NO ES FIQUI EL MATEIX NOM DE DISPOSITIU PEL MATEIX USUARI
 
 CREATE TABLE dadesDispositius (
     idDispositiu INT,
