@@ -42,7 +42,7 @@ const ChangePassword =  () => {
     <>
       <Link className="change-password-link" to="#" onClick={toggleChangePwd}>{!ChangePwd? "Canviar contrassenya": "Enrera"}</Link>
       {ChangePwd &&
-        <div className="form-container">
+        <div className="form-container password-container">
           <Form className="custom-form" onSubmit={handleChangePwd}>
           <h3>Canvia la contrassenya</h3>
           <Form.Group controlId="formBasicUsername">

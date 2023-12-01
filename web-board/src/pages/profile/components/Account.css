@@ -1,0 +1,33 @@
+.account-box {
+  width: 90%;
+  min-width: 400px;
+  margin: auto;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+}
+
+.account-box h2 {
+  color: #007ABF;
+}
+
+.logout-link {
+  display: block;
+  margin-top: 10px;
+  color: #dc3545;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.logout-link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .account-box {
+    padding: 15px;
+  }
+}
+  

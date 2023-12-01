@@ -2,7 +2,7 @@
 export function ParametersPage() {
     return (
         <div>
-            Parameters page
+            <h2>Parameters page</h2>
         </div>
     )
 }

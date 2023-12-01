@@ -5,7 +5,7 @@ export function DataPage() {
 
     return (
         <div>
-            Data Page
+            <h2>Data Page</h2>
         </div>
     )
 }

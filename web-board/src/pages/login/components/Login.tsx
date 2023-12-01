@@ -45,7 +45,7 @@ const Login =  () => {
     return (
       <>
       {expanded &&(
-        <div className="form-container">
+        <div className="form-container login-container">
             <Form className="custom-form" onSubmit={handleLogin}>
             <h1>Inicia sessió</h1>
             <Form.Group controlId="formBasicUsername">
@@ -66,7 +66,7 @@ const Login =  () => {
         </div>
       )}
       {!expanded &&(
-        <div className="form-container">
+        <div className="form-container login-container">
             <Form className="custom-form" onSubmit={handleRegister}>
             <h1>Registra un nou usuari</h1>
             <Form.Group controlId="formBasicUsername">
