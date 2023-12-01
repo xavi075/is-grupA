@@ -20,10 +20,6 @@
   color: white; 
 }
 
-/* .navbar-toggler {
-  border: none;
-} */
-
 .nav-link {
   color: white;
   font-size: 18px;
@@ -43,16 +39,16 @@
 
 @media (max-width: 768px) {
   .navbar {
-    padding: 10px; /* Ajusta el espacio de la barra de navegación */
+    padding: 10px;
   }
 
   .navbar-brand {
-    font-size: 24px; /* Ajusta el tamaño del texto del logotipo */
+    font-size: 24px;
   }
 
   .nav-link {
-    font-size: 14px; /* Ajusta el tamaño del texto de los enlaces */
-    margin-left: 10px; /* Ajusta el espacio entre los enlaces */
+    font-size: 14px;
+    margin-left: 10px;
     margin-right: 10px;
   }
 }

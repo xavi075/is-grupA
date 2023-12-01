@@ -1,3 +1,8 @@
 export interface ILogged {
-    usernameId: number
-  }
+  success: boolean
+  usernameId: number
+}
+
+export interface IChangedPwd {
+  success: boolean
+}

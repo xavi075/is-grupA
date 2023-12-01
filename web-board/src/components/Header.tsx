@@ -14,7 +14,6 @@ const Header = () => {
   return (
     <div>
       <Navbar bg="dark" variant="dark" expand="lg">
-        {/* <Navbar.Brand href={`${props.username === "" ? '/' : '/home'}`}>Sensor Center</Navbar.Brand> */}
         <Navbar.Brand>Sensor Center</Navbar.Brand>
         {isLoggedIn && 
         <Navbar.Collapse id="basic-navbar-nav">
@@ -22,7 +21,6 @@ const Header = () => {
             <Link className="nav-link" to="/home">Inici</Link>
             <Link className="nav-link" to="/data">Dades</Link>
             <Link className="nav-link" to="/parameters">Paràmetres</Link>
-            {/* Canviar següent objecte del menu (no login, espai d'usuari) */}
             <Link className="nav-link" to="/profile"><FontAwesomeIcon icon="circle-user" size='2xl' style={{ color: "#FFFFFF" }} /></Link>
           </Nav>
         </Navbar.Collapse> }
