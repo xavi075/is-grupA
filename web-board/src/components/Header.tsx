@@ -16,7 +16,8 @@ const Header = () => {
       <Navbar bg="dark" variant="dark" expand="lg">
         {/* <Navbar.Brand href={`${props.username === "" ? '/' : '/home'}`}>Sensor Center</Navbar.Brand> */}
         <Navbar.Brand>Sensor Center</Navbar.Brand>
-        {isLoggedIn && <Navbar.Collapse id="basic-navbar-nav">
+        {isLoggedIn && 
+        <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="ml-auto">
             <Link className="nav-link" to="/home">Inici</Link>
             <Link className="nav-link" to="/data">Dades</Link>

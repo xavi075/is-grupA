@@ -8,7 +8,7 @@ import './Login.css';
 
 
 const Login =  () => {
-  const { setUserName, setLoggedIn } = useUser();
+  const { setUserNameId, setLoggedIn } = useUser();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   // const [loginInfo, setLoginInfo] = useState<ILogged>()
@@ -19,18 +19,18 @@ const Login =  () => {
     // loginRequest(username, password)
     //     .then((response) => {
     //       setLoginInfo(response)
-    //       window.sessionStorage.setItem('username', loginInfo.username)
-    //       setUserName(userName);
-    //       setLoggedIn(!!userName);
+    //       window.sessionStorage.setItem('username', loginInfo.usernameId)
+    //       setUserNameId(loginInfo.usernameId);
+    //       setLoggedIn(!!loginInfo.usernameId);
     //     })
     //     .catch((error) => {
     //       console.error('Error when obtaining branches (Username or password incorrect): ', error);
     //     });
-
+    const userId = 1;
     // DEBUG mode
-    window.sessionStorage.setItem('username', username)
-    setUserName(username);
-    setLoggedIn(!!username);
+    window.sessionStorage.setItem('usernameId', userId.toString())
+    setUserNameId(userId.toString());
+    setLoggedIn(!!userId);
   };
 
   const handleRegister = (e: React.FormEvent<HTMLFormElement>) => {

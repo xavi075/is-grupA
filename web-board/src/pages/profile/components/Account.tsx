@@ -3,10 +3,10 @@ import { Link } from "react-router-dom";
 
 
 const Account =  () => {
-    const { setUserName, setLoggedIn } = useUser();
+    const { setUserNameId, setLoggedIn } = useUser();
     const logout = () => {
         window.sessionStorage.removeItem('username')
-        setUserName(null)
+        setUserNameId(null)
         setLoggedIn(false)
     }
 

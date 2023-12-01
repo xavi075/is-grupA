@@ -1,22 +1,22 @@
 import { createContext, useContext, ReactNode, useState } from 'react';
 
 interface UserContextProps {
-  username: string | null;
+  usernameId: string | null;
   isLoggedIn: boolean;
-  setUserName: (name: string | null) => void;
+  setUserNameId: (name: string | null) => void;
   setLoggedIn: (loggedIn: boolean) => void;
 }
 
 const UserContext = createContext<UserContextProps | undefined>(undefined);
 
 export const UserContextProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [username, setUserName] = useState<string | null>(
-    () => window.sessionStorage.getItem('username')
+  const [usernameId, setUserNameId] = useState<string | null>(
+    () => window.sessionStorage.getItem('usernameId')
   );
-  const [isLoggedIn, setLoggedIn] = useState<boolean>(!!username);
+  const [isLoggedIn, setLoggedIn] = useState<boolean>(!!usernameId);
   
   return (
-    <UserContext.Provider value={{ username, isLoggedIn,setUserName, setLoggedIn }}>
+    <UserContext.Provider value={{ usernameId, isLoggedIn,setUserNameId, setLoggedIn }}>
       {children}
     </UserContext.Provider>
   );
