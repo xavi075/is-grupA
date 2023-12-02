@@ -39,8 +39,8 @@ const ChangePassword =  () => {
   };
 
   return (
-    <>
-      <Link className="change-password-link" to="#" onClick={toggleChangePwd}>{!ChangePwd? "Canviar contrassenya": "Enrera"}</Link>
+    <div className='change-password-container'>
+      <Link className="change-password-link" to="#" onClick={toggleChangePwd}>{!ChangePwd? "Canviar contrassenya" : "Enrera"} {!ChangePwd? <FontAwesomeIcon icon="caret-right" style={{ color: "#007ABF" }} /> : <FontAwesomeIcon icon="caret-down" style={{ color: "#007ABF" }} />}</Link>
       {ChangePwd &&
         <div className="form-container password-container">
           <Form className="custom-form" onSubmit={handleChangePwd}>
@@ -61,7 +61,7 @@ const ChangePassword =  () => {
         </Form>
         </div>
       }
-    </>
+    </div>
   )
 }
 

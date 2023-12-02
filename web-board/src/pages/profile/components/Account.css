@@ -14,14 +14,21 @@
 }
 
 .logout-link {
-  display: block;
-  margin-top: 10px;
-  color: #dc3545;
+  display: inline-block;
+  margin-top: 30px;
+  padding: 10px 20px;
+  color: #fff;
+  background-color: #dc3545;
   text-decoration: none;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
 }
 
 .logout-link:hover {
+  background-color: #ffffff;
+  color: #dc3545;
   text-decoration: underline;
 }
 

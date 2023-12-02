@@ -1,0 +1,28 @@
+.table-container {
+  width: 300px;
+  margin: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden; 
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
+}
+
+td:last-child {
+  text-align: right;
+  font-weight: bold;
+}
+
+td + td {
+  border-left: 1px solid #ddd;
+}
+  
