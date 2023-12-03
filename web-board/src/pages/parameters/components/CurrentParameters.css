@@ -1,0 +1,18 @@
+
+.edit-link {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007ABF;
+    color: #fff;
+    border: 2px solid #007ABF;
+    border-radius: 20px; 
+    text-decoration: none;
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+  }
+  
+  .edit-link:hover {
+    background-color: #ffffff;
+    border-color: #007ABF;
+    color: #007ABF;
+  }
+  

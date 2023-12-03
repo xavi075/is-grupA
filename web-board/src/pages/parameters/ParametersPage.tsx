@@ -1,4 +1,3 @@
-
 export function ParametersPage() {
     return (
         <div>
