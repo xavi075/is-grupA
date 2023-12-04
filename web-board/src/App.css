@@ -1,0 +1,25 @@
+a {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover{
+    opacity: .7;
+  }
+}
+
+.pipelines-page-container {
+  margin: 30px;
+}
+
+.success-row {
+  background-color: lightgreen;
+}
+
+.failed-row {
+  background-color: lightcoral;
+}
+
+button{
+  cursor: pointer;
+  padding: 5px 15px;
+}

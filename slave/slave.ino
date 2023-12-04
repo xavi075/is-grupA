@@ -32,6 +32,8 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
+#include <LowPower.h>
+
 #define N 128
 #define TEMPS 10
 
@@ -45,7 +47,7 @@ DallasTemperature sensors(&oneWire);
 
 static volatile float avg = 0;
 static volatile float avg_percent = 0;
-static uint8_t avg_str[10];
+static uint8_t avg_str[20];
 volatile uint16_t i;
 volatile bool flag = false;
 volatile uint8_t n = N-1;
@@ -65,6 +67,8 @@ void activa_lectura(void);
 void envia(void);
 void envia_resposta(void);
 void envia_temperatura(void);
+void desperta(void);
+
 
 
 void setup(){
@@ -94,7 +98,8 @@ void setup(){
 
   modulator_init();
   
-  setup_tmr0(TEMPS, activa_lectura);
+  //setup_tmr0(TEMPS, activa_lectura);
+  setup_tmr0(TEMPS, desperta);
 
   // REGAR = pin_bind(&PORTD, 6, Output);
   // LED_R = pin_bind(&PORTD, 4, Output);
@@ -169,6 +174,17 @@ void envia_temperatura(void){
 //     }
 // }
 
+void desperta(void){
+  pinMode(18, OUTPUT);
+  static uint8_t pregunta[6];
+  pregunta[0] = 'G';
+  pregunta[1] = '3';
+  pregunta[2] = ':';
+  pregunta[3] = 'P';
+  pregunta[4] = '?';
+  pregunta[5] = '\0';
+  lora_putd(avg_str, 6);
+}
 
 void loop(void){
     register_lora_rx_event_callback( parse_lora );
@@ -201,11 +217,11 @@ void loop(void){
         //     //     // envia_estat_bomba();
         //     // }
           flag = false;
+          LowPower.idle(SLEEP_FOREVER, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_ON, SPI_OFF, USART0_OFF, TWI_OFF);
           // activa_lectura();
         } 
  }      
 }
-
 
 ISR(TIMER2_COMPA_vect){
     value=read8_ADC();
@@ -228,6 +244,10 @@ void parse_lora( uint8_t * buf, uint8_t len, uint8_t status ) {
 	// 	return;
 	// }
     if (buf[0] == 'G' && buf[1] == '3' && buf[2] == ':'){
+      // if(buf[3] == 'O' && buf[4] == 'K'){
+        
+      // }
+      
         if(buf[3] == '?' && buf[4] == 'H'){
           // Serial.println("Recepció petició d'humitat");
           envia_resposta();
@@ -235,6 +255,8 @@ void parse_lora( uint8_t * buf, uint8_t len, uint8_t status ) {
             // envia_estat_bomba();
             // Serial.println("Recepció petició d'estat bomba");
             // envia();
+        } else if (buf[3] == 'N' && buf[4] == 'O'){
+          activa_lectura();
         }
     }
 }

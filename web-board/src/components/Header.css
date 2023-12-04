@@ -1,0 +1,44 @@
+/* Header.css */
+.navbar {
+    background-color: #007ABF;
+    padding: 20px;
+
+  }
+  
+  .navbar-brand {
+    font-size: 36px;
+    font-weight: bold;
+    color: white; 
+    padding: 10px 0;
+    margin: 0 auto; 
+    display: table; 
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+  
+  .navbar-brand:hover {
+    color: white; 
+  }
+  
+  /* .navbar-toggler {
+    border: none;
+  } */
+  
+  .nav-link {
+    color: white;
+    font-size: 18px;
+    margin-left: 20px;
+    margin-right: 20px;
+    text-decoration: none;
+    position: relative;
+  }
+  
+  .nav-link:hover {
+    color: #a5a5a5;
+    &::before {
+      visibility: visible;
+      transform: scaleX(1);
+    }
+  }
+  
+  

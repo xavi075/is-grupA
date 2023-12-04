@@ -2,6 +2,46 @@ import mysql.connector
 import datetime
 
 class mariaDBConn:
+    """
+    Classe que proporciona una interfície per interactura amb una base de dades MariaDB.
+
+    Permet establir una connexió, realitzar les operacions bàsiques, gestionar transaccions
+    gestionar transacciones y obtener información sobre las tablas y columnas de la base de datos.
+
+    A continuació es pot veure un exemple bàsic d'ús dels mètodes de la classe. Cal tenir en compte
+    que per tal de que aquests doctests i els de tots els mètodes funcionin és necessari crear 
+    l'usuari 'ferran' amb contrasenya '3007' i s'ha d'haver creat la base de dades anomenada
+    'integracioSistemes' amb la taula provesDoctests tal i com es pot veure al fitxer 
+    'integracioSistemes.sql'.
+
+    >>> db = mariaDBConn('localhost', 'ferran', '3007', 'integracioSistemes')
+    >>> db.conecta()
+    >>> db.començaTransaccio()
+    >>> try:
+    ...     db.insert('provesDoctests', {'nomProva': 'prova1', 'dataHoraProva': '2002-07-30', 'dadaProva': 24.56})
+    ... except:
+    ...     db.rollback()
+    ...     print("S'ha produit un error")
+    ... else:
+    ...     db.commit()
+    ... finally:
+    ...     db.executaQuery("SELECT nomProva, dataHoraProva, dadaProva FROM provesDoctests ORDER BY id DESC LIMIT 1")
+    [('prova1', datetime.datetime(2002, 7, 30, 0, 0), Decimal('24.56'))]
+
+    >>> db.començaTransaccio()
+    >>> try:
+    ...     db.insert('provesDoctests', {'nomProva': 'prova2', 'dataHoraProva': '2002-13-30', 'dadaProva': 51.14})
+    ... except Exception as e:
+    ...     db.rollback()
+    ...     print(e)
+    ... else:
+    ...     db.commit()
+    ... finally:
+    ...     db.executaQuery("SELECT nomProva, dataHoraProva, dadaProva FROM provesDoctests ORDER BY id DESC LIMIT 1")
+    1292 (22007): Incorrect datetime value: '2002-13-30' for column `integracioSistemes`.`provesDoctests`.`dataHoraProva` at row 1
+    [('prova1', datetime.datetime(2002, 7, 30, 0, 0), Decimal('24.56'))]
+    
+    """
 
     def __init__(self, host, nomUsuari, contrasenya, baseDades):
         """
@@ -111,6 +151,40 @@ class mariaDBConn:
         resultat = cursor.fetchall()
         cursor.close()
         return resultat
+    
+    def fetch(self, query, valors = None):
+        """
+        Executa operacions select SQL per consultar dades de la base de dades a la base de dades i
+        obtenir-les en una estructura més agradable que en el mètode executaQuery.
+
+        Args:
+            query (string): consulta SQL a executar.
+            valors (tuple, optional): valors d'enllaç (per a consultes parametritzades)
+
+        Returns:
+            list of dict: llista de diccionaris de les dades obtingudes. Cada fila de la base de dades es
+                correspon a un diccionari.
+
+        >>> db = mariaDBConn('localhost', 'ferran', '3007', 'integracioSistemes')
+        >>> db.conecta()
+        >>> db.insert('provesDoctests', {'nomProva': 'prova1', 'dataHoraProva': '2002-07-30', 'dadaProva': 1})
+        >>> db.insert('provesDoctests', {'nomProva': 'prova2', 'dataHoraProva': '2002-07-30', 'dadaProva': 2})
+        >>> db.insert('provesDoctests', {'nomProva': 'prova3', 'dataHoraProva': '2002-07-30', 'dadaProva': 3})
+        >>> db.fetch("SELECT nomProva, dataHoraProva, dadaProva FROM provesDoctests ORDER BY id DESC LIMIT 3")
+        [{'nomProva': 'prova3', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('3.00')}, {'nomProva': 'prova2', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('2.00')}, {'nomProva': 'prova1', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('1.00')}]
+        >>> db.fetch("SELECT nomProva, dataHoraProva, dadaProva FROM provesDoctests WHERE dataHoraProva = %s ORDER BY id DESC LIMIT 3", (datetime.datetime(2002, 7, 30, 0, 0), ))
+        [{'nomProva': 'prova3', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('3.00')}, {'nomProva': 'prova2', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('2.00')}, {'nomProva': 'prova1', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('1.00')}]
+        >>> db.fetch("SELECT nomProva, dataHoraProva, dadaProva FROM provesDoctests WHERE nomProva = %s ORDER BY id DESC LIMIT 1", ('prova2', ))
+        [{'nomProva': 'prova2', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('2.00')}]
+        >>> db.fetch("SELECT nomProva, dataHoraProva, dadaProva FROM provesDoctests WHERE dadaProva >= %s ORDER BY id DESC LIMIT 2", (2, ))
+        [{'nomProva': 'prova3', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('3.00')}, {'nomProva': 'prova2', 'dataHoraProva': datetime.datetime(2002, 7, 30, 0, 0), 'dadaProva': Decimal('2.00')}]
+        >>> db.desconecta()
+        """
+        cursor = self.conexio.cursor(dictionary=True)
+        cursor.execute(query, valors)
+        resultat = cursor.fetchall()
+        cursor.close()
+        return resultat
 
     def insert(self, nomTaula, valors):
         """
@@ -202,10 +276,10 @@ class mariaDBConn:
 
         En aquesta funció no es realitzaran doctests ja que el seu funcionament es verifica en els doctests
         de les funcions commit() i rollback().
-
-        
-        
         """
+        # assegurem que no obrim una nova transacció si n'hi ha una d'oberta
+        if self.conexio.is_connected() and self.conexio.in_transaction:
+            self.conexio.commit()
         self.conexio.start_transaction()
 
     def commit(self):
