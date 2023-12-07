@@ -64,6 +64,7 @@ BEGIN
 END;
 //
 
+-- trigger per verificar que els estats del reg inserit només siguin 0 o 1
 CREATE TRIGGER verifica_estatReg
 BEFORE INSERT ON canvisReg
 FOR EACH ROW
@@ -71,6 +72,25 @@ BEGIN
     IF NEW.estatReg NOT IN (0, 1) THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Error: estatReg ha de ser 0 o 1';
+    END IF;
+END;
+//
+
+-- trigger per verificar que s'insereixi un usuari amb email repetit, solucionant d'aquesta manera
+-- problemes amb el auto_increment del id
+CREATE TRIGGER verifica_emailRepetit
+BEFORE INSERT ON usuaris
+FOR EACH ROW
+BEGIN
+    DECLARE num_usuaris INT;
+
+    SELECT COUNT(*) INTO num_usuaris
+    FROM usuaris
+    WHERE email = NEW.email;
+
+    IF num_usuaris > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error: Ja hi ha un usuari insertat amb aquest correu electrònic';
     END IF;
 END;
 //

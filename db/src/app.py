@@ -93,8 +93,6 @@ def inserirProva():
     except Exception as e:
         return jsonify({'success': False, 'error': f'Error no controlat: {str(e)}'}), 500
 
-# ¡¡¡¡ERROR!!!!: QUAN HI HA ALGUN ERROR INSERINT UN USUARI, S'AUGMENTA EL ID
-# ex: inserir correctament -> id = 1. inserir incorrectament. inserir correctament -> ¡¡¡¡id = 3!!!!
 @app.route('/inserirUsuari', methods = ['POST'])
 def inserirUsuari():
     """
