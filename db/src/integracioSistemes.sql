@@ -27,6 +27,14 @@ CREATE TABLE dadesDispositius (
     FOREIGN KEY (idDispositiu) REFERENCES dispositius (id) 
 );
 
+CREATE TABLE canvisReg (
+    idDispositiu INT,
+    dataHora DATETIME,
+    estatReg BOOLEAN,
+    PRIMARY KEY (idDispositiu, dataHora),
+    FOREIGN KEY (idDispositiu) REFERENCES dispositius (id) 
+);
+
 CREATE TABLE provesDoctests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nomProva VARCHAR(50),
@@ -52,6 +60,17 @@ BEGIN
     IF num_dispositius > 0 THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Error: El usuari ja té un dispositiu amb el mateix nom';
+    END IF;
+END;
+//
+
+CREATE TRIGGER verifica_estatReg
+BEFORE INSERT ON canvisReg
+FOR EACH ROW
+BEGIN
+    IF NEW.estatReg NOT IN (0, 1) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error: estatReg ha de ser 0 o 1';
     END IF;
 END;
 //

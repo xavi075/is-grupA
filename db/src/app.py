@@ -243,7 +243,7 @@ def inserirDadesDispositiu():
     {
         "idDispositiu": 1,
         "dadaHum": 45.14,
-        "dadaTemp": 16.2
+        "dadaTemp": 16.2,
     }
     ```
 
@@ -289,6 +289,86 @@ def inserirDadesDispositiu():
             else:
                 db.commit()
                 return jsonify({'success': True})
+    
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+@app.route('/inserirEstatReg', methods = ['POST'])
+def inserirEstatReg():
+    """
+    Endpoint de Flask per inserir dades a la taula canvisReg. Aquest només insereix és els canvis, és a dir
+    només insereix la dada si la última dada del dispositiu és diferent.
+
+    Mètode: POST
+    Format de dades esperat: JSON
+
+    Exemple de sol·licitud:
+    ```
+    POST /inserirDada
+    {
+        "idDispositiu": 1,
+        "estatReg": 1
+    }
+    ```
+
+    Respostes possibles:
+    - 200 OK: No hi ha hagut errors en l'execució. S'indica si la dada s'ha inserit o no depenent de
+        si és diferent o no a l'última dada guardada.
+        ```json
+        {
+            "success" = True,
+            'dadaInserida': True / False
+        }   
+        ```
+    - 400 Bad Request:
+        - Si no es proporciona un JSON en la sol·licitud.
+        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
+    - 500 Internal Sever Error: 
+        - Error al inserir les dades a la base de dades.
+        - Error no controlat.
+    """
+    try: 
+        try: 
+            dades_json = request.json
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
+
+        idDispositiu = dades_json.get('idDispositiu')
+        dataCreacio_utc = datetime.now(pytz.utc)
+        estatReg = dades_json.get('estatReg')
+
+        if idDispositiu is None:
+            return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
+        elif estatReg is None:
+            return jsonify({'success': False, 'error': f"Camp 'estatReg' no especificat en el JSON"}), 400
+        
+        else:
+            try:
+                query = """SELECT estatReg
+                        FROM canvisReg
+                        WHERE idDispositiu = %s
+                        ORDER BY dataHora DESC
+                        LIMIT 1"""
+                params = (idDispositiu, )
+                last_estatReg = db.executaQuery(query, params)
+
+            except Exception as e:
+                return jsonify({'success': False, 'error': f"Error al consultar l'última dada: {str(e)}"}), 500
+            else:
+                # només s'insereix la dada si la dada és diferent a l'última dada inserida
+                if len(last_estatReg) > 0: # hi ha alguna dada inserida
+                    if last_estatReg[0][0] == estatReg: # l'última dada inserida és igual
+                        return jsonify({'success': True, 'dadaInserida': False})
+
+                db.començaTransaccio()
+                try:
+                    db.insert('canvisReg', {'idDispositiu': idDispositiu, 'dataHora': dataCreacio_utc, 'estatReg': estatReg})
+                except Exception as e:
+                    db.rollback()
+                    return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+                else:
+                    db.commit()
+                    return jsonify({'success': True, 'dadaInserida': True})
     
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -688,6 +768,245 @@ def obtenirDadesDispositius():
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+@app.route('/obtenirCanvisReg', methods = ['GET'])
+def obtenirCanvisReg():
+    """
+    Endpoint de Flask per obtenir dades de la taula canvisReg.
+
+    Mètode: GET
+    Paràmetres de la URL:
+    - idUsuari [opcional]: id de l'usuari del qual es volen obtenir les dades dels seus dispositius assignats.
+    - idDispositiu [opcional]: id del dispositiu del qual es volen obtenir les dades.
+    - dataInici [opcional]: data a partir de la qual es volen obtenir dades.
+    - dataFi [opcional]: data fins a la qual es volen obtenir dades.
+    
+    Exemples de sol·licitud
+    - Obtenir totes les dades:
+      ```
+      GET /obtenirCanvisReg
+      ```
+    - Obtenir totes les dades d'un usuari:
+      ```
+      GET /obtenirCanvisReg?idUsuari=1
+      ```
+    - Obtenir totes les dades d'un dispositiu a partir del id:
+      ```
+      GET /obtenirCanvisReg?idDispositiu=id
+      ```
+    - Obtenir totes les dades d'un usuari indicant data inici i data fi
+      ```
+      GET /obtenirCanvisReg?emailUsuari=usuari@exemple.com&dataInici=2023-11-16 00:01:00&dataFi=31-12-2023 23:59:00
+      ```
+    - Obtenir totes les dades d'un dispositiu indicant data inici i data fi
+      ```
+      GET /obtenirCanvisReg?idDispositiu=id&dataInici=01-01-2023 00:01:00&dataFi=31-12-2023 23:59:00
+      ```
+
+    Respostes possibles:
+    - 200 OK: Retorna les dades obtingudes segons els paràmetres proporcionats
+        ```json
+        {
+            "success" = True,
+            "dades": 
+            [
+                {"idDispositiu": 1, "dataHora": "2023-11-16 12:30:00", "estatReg": 0},
+                {"idDispositiu": 1, "dataHora": "2023-11-16 12:31:00", "estatReg": 1},
+                {"idDispositiu": 2, "dataHora": "2023-11-16 12:31:00", "estatReg": 0},
+                ...
+            ]
+        }
+        ```
+    - 400 Bad Request: 
+        - Si no es proporciona un JSON en la sol·licitud.
+        - Si falta alguna dada necessària en el JSON.
+    - 500 Internal Server Error: 
+        - Error al consultar la base de dades.
+        - Error no controlat.
+    """
+    try:
+        idUsuari = request.args.get('idUsuari')
+        idDispositiu = request.args.get('idDispositiu')
+        dataInici = request.args.get('dataInici')
+        dataFi = request.args.get('dataFi')
+
+        if idUsuari:
+            if dataInici:
+                if dataFi:
+                    #obtenir les dades d'un interval de temps d'un usuari
+                    query = """SELECT reg.idDispositiu, reg.dataHora, reg.estatReg 
+                        FROM canvisReg reg
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = reg.idDispositiu 
+                        WHERE dispo.idUsuariPropietari = %s
+                            AND dataHora >= %s
+                            AND dataHora <= %s"""
+                    params = (idUsuari, dataInici, dataFi)
+
+                else:
+                    #obtenir les dades a partir d'una data d'un usuari
+                    query = """SELECT reg.idDispositiu, reg.dataHora, reg.estatReg 
+                        FROM canvisReg reg
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = reg.idDispositiu 
+                        WHERE dispo.idUsuariPropietari = %s
+                            AND dataHora >= %s"""
+                    params = (idUsuari, dataInici)
+            else:
+                #obtenir totes les dades d'un usuari
+                query = """SELECT reg.idDispositiu, reg.dataHora, reg.estatReg 
+                        FROM canvisReg reg
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = reg.idDispositiu 
+                        WHERE dispo.idUsuariPropietari = %s"""
+                params = (idUsuari,)
+
+        elif idDispositiu:
+            if dataInici:
+                if dataFi:
+                    #obtenir les dades d'un interval de temps d'un dispositiu
+                    query = """SELECT reg.idDispositiu, reg.dataHora, reg.estatReg 
+                            FROM canvisReg reg 
+                            INNER JOIN dispositius dispo 
+                                ON dispo.id = reg.idDispositiu 
+                            WHERE reg.idDispositiu = %s 
+                                AND dataHora >= %s
+                                AND dataHora <= %s"""
+                    params = (idDispositiu, dataInici, dataFi)
+
+                else:
+                    #obtenir les dades a partir d'una data d'un dispositiu
+                    query = """SELECT reg.idDispositiu, reg.dataHora, reg.estatReg 
+                            FROM canvisReg reg
+                            INNER JOIN dispositius dispo 
+                                ON dispo.id = reg.idDispositiu 
+                            WHERE reg.idDispositiu = %s 
+                                AND dataHora >= %s"""
+                    params = (idDispositiu, dataInici)
+
+            else: 
+                #obtenir totes les dades d'un dispositiu
+                query = """SELECT reg.idDispositiu, reg.dataHora, reg.estatReg 
+                        FROM canvisReg reg 
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = reg.idDispositiu 
+                        WHERE reg.idDispositiu = %s"""
+                params = (idDispositiu, )
+        
+        else:
+            # Obtenir totes les dades
+            query = "SELECT idDispositiu, dataHora, estatReg FROM canvisReg"
+            params = ()
+
+        try: 
+            dades = db.executaQuery(query, params)
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+        
+        else:     
+            dades_formatejades = [
+                {
+                    "idDispositiu": dada[0],
+                    "dataHora": dada[1],
+                    "canviReg": dada[2],
+                }
+                for dada in dades
+            ]
+            return jsonify({'success': True, 'dades': dades_formatejades})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+@app.route('/obtenirUltimReg', methods = ['GET'])
+def obtenirUltimReg():
+    """
+    Endpoint de Flask per obtenir les dades del últim reg d'un dispositiu
+
+    Mètode: GET
+    Paràmetres de la URL:
+    - idDispositiu [obligatori]: id del dispositiu del qual es volen obtenir les dades.
+    
+    Exemples de sol·licitud
+    - Obtenir les dades d'un dispositiu a partir del id:
+      ```
+      GET /obtenirUltimReg?idDispositiu=id
+      ```
+
+    Respostes possibles:
+    - 200 OK: Retorna les dades obtingudes segons els paràmetres proporcionats
+        ```json
+        {
+            "success" = True,
+            "dades": 
+            [
+                {"dataHoraInici": "2023-11-16 12:30:00"/ "", "dataHoraFi": "2023-11-16 12:45:00" / ""}
+            ]
+        }
+        ```
+    - 400 Bad Request: 
+        - Si no es proporciona un JSON en la sol·licitud.
+        - Si falta alguna dada necessària en el JSON.
+    - 500 Internal Server Error: 
+        - Error al consultar la base de dades.
+        - Error no controlat.
+    """
+    try:
+        idDispositiu = request.args.get('idDispositiu')
+
+        try: 
+            params_lastReg = (idDispositiu, )
+            query_lastReg = """SELECT estatReg, dataHora
+                            FROM canvisReg 
+                            WHERE idDispositiu = %s
+                            ORDER BY dataHora DESC 
+                            LIMIT 1"""
+            dades_lastReg = db.executaQuery(query_lastReg, params_lastReg)
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar la hora del últim canviReg: {str(e)}"}), 500
+
+        else:
+            if len(dades_lastReg) == 0: # no s'ha regat mai
+                dataHoraIniciReg = ""
+                dataHoraFiReg = ""
+
+            else:
+                dataHoraLastReg = dades_lastReg[0][1]
+                valorLastReg = dades_lastReg[0][0]
+
+                if valorLastReg == 1: # s'està regant actualment
+                    dataHoraIniciReg = dataHoraLastReg
+                    dataHoraFiReg = ""
+                
+                else:
+                    try: 
+                        params_lastlastReg = (idDispositiu, dataHoraLastReg)
+                        query_lastlastReg = """SELECT estatReg, dataHora
+                                            FROM canvisReg 
+                                            WHERE idDispositiu = %s 
+                                            AND dataHora < %s 
+                                            ORDER BY dataHora DESC 
+                                            LIMIT 1"""
+                        dades_lastlastReg = db.executaQuery(query_lastlastReg, params_lastlastReg)
+
+                    except Exception as e:
+                        return jsonify({'success': False, 'error': f"Error al consultar la hora del penúltim canviReg: {str(e)}"}), 500
+                    
+                    else:
+                        if len(dades_lastlastReg) == 0: # no s'ha regat mai
+                            dataHoraIniciReg = ""
+                            dataHoraFiReg = ""
+                        else: # s'ha començat i acabat de regar
+                            dataHoraIniciReg = dades_lastlastReg[0][1]
+                            dataHoraFiReg = dataHoraLastReg
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+    
+    else:
+        dades_formatejades = [{"dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg}]
+        return jsonify({'success': True, 'dades': dades_formatejades})
 
 @app.route('/obtenirUltimaDadaDispositiu', methods = ['GET'])
 def obtenirUltimaDadaDispositiu():
