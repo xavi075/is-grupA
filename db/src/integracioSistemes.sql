@@ -14,7 +14,7 @@ CREATE TABLE usuaris (
 CREATE TABLE dispositius (
     id INT AUTO_INCREMENT PRIMARY KEY,
     idUsuariPropietari INT,
-    nomDispositiu VARCHAR(50) NOT NULL,
+    nomDispositiu VARCHAR(50),
     FOREIGN KEY (idUsuariPropietari) REFERENCES usuaris (id)  
 );
 
@@ -44,9 +44,9 @@ CREATE TABLE provesDoctests (
 
 -- afegim triggers
 
--- trigger per verificar que no hi hagi més d'un dispositiu amb el mateix nom per al mateix usuari
+-- triggers per verificar que no hi hagi més d'un dispositiu amb el mateix nom per al mateix usuari
 DELIMITER //
-CREATE TRIGGER verifica_nomDispositiu_usuari
+CREATE TRIGGER verifica_nomDispositiu_usuari_insert
 BEFORE INSERT ON dispositius
 FOR EACH ROW
 BEGIN
@@ -63,6 +63,26 @@ BEGIN
     END IF;
 END;
 //
+
+CREATE TRIGGER verifica_nomDispositiu_usuari_update
+BEFORE UPDATE ON dispositius
+FOR EACH ROW
+BEGIN
+    DECLARE num_dispositius INT;
+
+    SELECT COUNT(*) INTO num_dispositius
+    FROM dispositius
+    WHERE idUsuariPropietari = NEW.idUsuariPropietari
+      AND nomDispositiu = NEW.nomDispositiu;
+
+    IF num_dispositius > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error: El usuari ja té un dispositiu amb el mateix nom';
+    END IF;
+END;
+//
+DELIMITER ;
+
 
 -- trigger per verificar que els estats del reg inserit només siguin 0 o 1
 CREATE TRIGGER verifica_estatReg

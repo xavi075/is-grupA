@@ -169,7 +169,8 @@ def inserirUsuari():
 @app.route('/inserirDispositiu', methods = ['POST'])
 def inserirDispositiu():
     """
-    Endpoint de Flask per inserir dades a la taula dispositius.
+    Endpoint de Flask per inserir dades a la taula dispositius. Permet inserir un dispositiu no assignat a
+    cap usuari.
 
     Mètode: POST
     Format de dades esperat: JSON
@@ -178,8 +179,8 @@ def inserirDispositiu():
     ```
     POST /inserirDispositiu
     {
-        "idUsuariPropietari": 1,
-        "nomDispositiu": "Nom del dispositiu"
+        "idUsuariPropietari": 1 / None,
+        "nomDispositiu": "Nom del dispositiu" / None
     }
     ```
 
@@ -207,22 +208,16 @@ def inserirDispositiu():
         idUsuari = dades_json.get('idUsuariPropietari')
         nomDispositiu = dades_json.get('nomDispositiu')
 
-        if idUsuari is None:
-            return jsonify({'success': False, 'error': f"Camp 'idUsuari' no especificat en el JSON"}), 400
-        elif nomDispositiu is None:
-            return jsonify({'success': False, 'error': f"Camp 'nomDispositiu' no especificat en el JSON"}), 400
-        
+        db.començaTransaccio()
+        try:
+            db.insert('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu})
+        except Exception as e:
+            db.rollback()
+            return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
         else:
-            db.començaTransaccio()
-            try:
-                db.insert('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu})
-            except Exception as e:
-                db.rollback()
-                return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
-            else:
-                db.commit()
-                idDispositiuInsertat = db.executaQuery("SELECT id FROM dispositius WHERE idUsuariPropietari = %s AND nomDispositiu = %s", (idUsuari, nomDispositiu))[0][0]
-                return jsonify({'success': True, 'iDispositiuInsertat': idDispositiuInsertat})
+            db.commit()
+            idDispositiuInsertat = db.executaQuery("SELECT id FROM dispositius ORDER BY id DESC LIMIT 1")[0][0]
+            return jsonify({'success': True, 'iDispositiuInsertat': idDispositiuInsertat})
     
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -378,7 +373,7 @@ def verificaLogIn():
     de la base de dades. Si troba les credencials, retorna el identificador de l'usuari per facilitar
     el logIn. 
 
-    Mètode: PUT
+    Mètode: POST
     Format de dades esperat: JSON
 
     Exemple de sol·licitud:
@@ -439,6 +434,91 @@ def verificaLogIn():
 
             return jsonify({'success': True, 'credencialsTrobades': credencials, 'idUsuari': idUsuari})
 
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+@app.route('/assignaDispositiuUsuari', methods = ['POST'])
+def assignaDispositiuUsuari():
+    """
+    Endpoint de Flask per assignar un dispositiu a un usuari. Només permet assignar-lo si el dispositiu
+    està desassignat, és a dir que no està assignat a cap altra usuari.
+
+    Mètode: POST
+    Format de dades esperat: JSON
+
+    Exemple de sol·licitud:
+    ```
+    POST /inserirDada
+    {
+        "idDispositiu": 1
+        "idUsuari": 1,
+        "nomDispositiu": "dispo_exemple"
+    }
+    ```
+
+    Respostes possibles:
+    - 200 OK: Indica si s'ha assignat el dispositiu correctament.
+        ```json
+        {
+            "success" = True
+        }
+        ```
+    - 400 Bad Request: Si es proporcionen paràmetres incorrectes.
+        - Si no es proporciona un JSON en la sol·licitud.
+        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
+    - 500 Internal Server Error: 
+        - Error al consultar la base de dades.
+        - Error no controlat.
+    """
+    try: 
+        try: 
+            dades_json = request.json
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
+
+        idDispositiu = dades_json.get('idDispositiu')
+        idUsuari = dades_json.get('idUsuari')
+        nomDispositiu = dades_json.get('nomDispositiu')
+
+        if idDispositiu is None:
+            return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
+        elif idUsuari is None:
+            return jsonify({'success': False, 'error': f"Camp 'idUsuari' no especificat en el JSON"}), 400
+        elif nomDispositiu is None:
+            return jsonify({'success': False, 'error': f"Camp 'nomDispositiu' no especificat en el JSON"}), 400
+        
+        else:
+            try:
+                query = """SELECT idUsuariPropietari
+                        FROM dispositius
+                        WHERE id = %s"""
+                params = (idDispositiu, )
+                dades = db.executaQuery(query, params)
+            
+            except Exception as e:
+                return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+            
+            else:
+                if len(dades) == 0:
+                    return jsonify({'success': False, 'error': f"No existeix cap dispositiu amb l'identificador especificat"}), 400
+                else:
+                    if dades[0][0] != None:
+                        return jsonify({'success': False, 'error': f"El dispositiu està assignat a un altre usuari"}), 400
+                    
+                    else:
+                        db.començaTransaccio()
+                        try:
+                            db.update('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu}, "id = " + str(idDispositiu))
+
+                        except Exception as e:
+                            db.rollback()
+                            return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
+                        
+                        else:
+                            db.commit()
+                            return jsonify({'success': True})
+
+    
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
 
@@ -622,6 +702,59 @@ def obtenirDispositius():
                     "id": dispo[0],
                     "idUsuariPropietari": dispo[1],
                     "nomDispositiu": dispo[2]
+                }
+                for dispo in dades_dispositius
+            ]
+            return jsonify({'success': True, 'dades': dades_formatejades})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+@app.route('/obtenirDispositiusDesassignats', methods = ['GET'])
+def obtenirDispositiusDesassignats():
+    """
+    Endpoint de Flask per obtenir els dispositius que no estan assignats a cap usuari, és a dir que
+    la columna idUsuariPropietari = NULL.
+
+    Mètode: GET
+    
+    Exemples de sol·licitud
+    - Obtenir totes les dades:
+      ```
+      GET /obtenirDispositiusDesassignats
+      ```
+    
+    Respostes possibles:
+    - 200 OK: Retorna les dades
+        ```json
+        {
+            "success" = True,
+            "dades": 
+            [
+                {"id": 1},
+                {"id": 2},
+                ...
+            ]
+        }
+        ```
+    - 500 Internal Server Error: 
+        - Error al consultar la base de dades.
+        - Error no controlat.
+    """
+    try:
+        query = """SELECT * 
+                FROM dispositius 
+                WHERE idUsuariPropietari IS NULL"""
+        try:
+            dades_dispositius = db.executaQuery(query)
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+        
+        else:     
+            dades_formatejades = [
+                {
+                    "id": dispo[0],
                 }
                 for dispo in dades_dispositius
             ]
