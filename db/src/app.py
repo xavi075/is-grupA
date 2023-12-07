@@ -377,7 +377,8 @@ def inserirEstatReg():
 def verificaLogIn():
     """
     Endpoint de Flask per obtenir si les credencials de log in es corresponen a les credencials
-    de la base de dades. 
+    de la base de dades. Si troba les credencials, retorna el identificador de l'usuari per facilitar
+    el logIn. 
 
     Mètode: PUT
     Format de dades esperat: JSON
@@ -397,6 +398,7 @@ def verificaLogIn():
         {
             "success" = True,
             "credencialsTrobades": True / False
+            "idUsuari": 1 / None
         }
         ```
     - 400 Bad Request: Si es proporcionen paràmetres incorrectes.
@@ -421,14 +423,23 @@ def verificaLogIn():
             return jsonify({'success': False, 'error': f"Camp 'contrasenya' no especificat en el JSON"}), 400
         
         try: 
-            contrasenya_hash_db = db.executaQuery("SELECT contrasenya_hash FROM usuaris WHERE email = %s", (email, ))[0][0]
+            dades = db.executaQuery("SELECT id, contrasenya_hash FROM usuaris WHERE email = %s", (email, ))
 
         except Exception as e:
             return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
         
         else:     
-            contrasenya_hash_usuari = hashlib.sha256(contrasenya.encode()).hexdigest()
-            return jsonify({'success': True, 'credencialsTrobades': contrasenya_hash_db == contrasenya_hash_usuari})
+            if len(dades) == 0: # l'usuari no es troba a la bbdd
+                credencials = False
+                idUsuari = None
+            else: # l'usuari es troba a la bbdd
+                print(dades)
+                idUsuari = dades[0][0]
+                contrasenya_hash_db = dades[0][1]
+                contrasenya_hash_usuari = hashlib.sha256(contrasenya.encode()).hexdigest()
+                credencials = contrasenya_hash_db == contrasenya_hash_usuari
+
+            return jsonify({'success': True, 'credencialsTrobades': credencials, 'idUsuari': idUsuari})
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -442,14 +453,20 @@ def obtenirUsuaris():
 
     Mètode: GET
     Paràmetres de la URL:
-    - emailUsuari [obligatori]: email de l'usuari del qual es volen obtenir les dades.
+    - idUsuari [opcional]: id de l'usuari del qual es volen obtenir les dades.
+    - emailUsuari [opcional]: email de l'usuari del qual es volen obtenir les dades.
 
     Exemples de sol·licitud
     - Obtenir totes les dades:
       ```
       GET /obtenirUsuaris
       ```
-    - Obtenir les dades d'un usuari en concret:
+    - Obtenir les dades d'un usuari en concret mitjançant el id (té preferència respecte l'email si
+      s'indiquen els dos):
+      ```
+      GET /obtenirUsuaris?idUsuari=1
+      ```
+    - Obtenir les dades d'un usuari en concret mitjançant el email:
       ```
       GET /obtenirUsuaris?emailUsuari=usuari@exemple.com
       ```
@@ -475,9 +492,14 @@ def obtenirUsuaris():
         - Error no controlat.
     """
     try:
+        idUsuari = request.args.get('idUsuari')
         emailUsuari = request.args.get('emailUsuari')
 
-        if emailUsuari:
+        if idUsuari:
+            # Obtenir les dades d'un usuari específic
+            query = "SELECT id, email, nomUsuari, dataCreacioUsuari FROM usuaris WHERE id = %s"
+            params = (idUsuari, )
+        elif emailUsuari:
             # Obtenir les dades d'un usuari específic
             query = "SELECT id, email, nomUsuari, dataCreacioUsuari FROM usuaris WHERE email = %s"
             params = (emailUsuari, )
@@ -514,7 +536,7 @@ def obtenirDispositius():
 
     Mètode: GET
     Paràmetres de la URL:
-    - emailUsuari [opcional]: email de l'usuari del qual es volen obtenir les dades dels seus dispositius assignats.
+    - idUsuari [opcional]: id de l'usuari del qual es volen obtenir les dades dels seus dispositius assignats.
     - nomDispositiu [opcional]: nom del dispositiu del qual es volen obtenir les dades. Sempre ha d'anar acompanyat
         d'un email d'un usuari, ja que diferents usuaris volen tenir dispositius amb el mateix nom.
     - idDispositiu [opcional]: id del dispositiu del qual es poden obtenir les dades.
@@ -524,17 +546,18 @@ def obtenirDispositius():
       ```
       GET /obtenirDispositius
       ```
-    - Obtenir les dades dels dispositius d'un usuari en concret:
+    - Obtenir les dades dels dispositius d'un usuari a partir d'un idUsuari:
       ```
-      GET /obtenirDispositius?emailUsuari=usuari@exemple.com
+      GET /obtenirDispositius?idUsuari=1
       ```
-    - Obtenir les dades d'un dispositiu en concret a partid del id:
+    - Obtenir les dades d'un dispositiu en concret a partid del id (té preferència respecte l'idUsuari si
+      s'indiquen els dos):
       ```
       GET /obtenirDispositius?idDispositiu=id
       ```
-    - Obtenir les dades d'un dispositiu en concret a partir del nom d'usuari i el nom de dispositiu:
+    - Obtenir les dades d'un dispositiu en concret a partir del id del usuari i el nom de dispositiu:
       ```
-      GET /obtenirDispositius?emailUsuari=usuari@exemple.com&nomDispositiu=nom_dispositiu
+      GET /obtenirDispositius?idUsuari=1&nomDispositiu=nom_dispositiu
       ```
     
     Respostes possibles:
@@ -558,38 +581,34 @@ def obtenirDispositius():
         - Error no controlat.
     """
     try:
-        emailUsuari = request.args.get('emailUsuari')
+        idUsuari = request.args.get('idUsuari')
         nomDispositiu = request.args.get('nomDispositiu')
         idDispositiu = request.args.get('idDispositiu')
 
-        if emailUsuari:
-            if nomDispositiu:
-                # Obtenir les dades d'un nom de dispositiu i usuari
-                query = """SELECT d.id, d.idUsuariPropietari, d.nomDispositiu
-                        FROM dispositius d 
-                        INNER JOIN usuaris u 
-                            ON u.id = d.idUsuariPropietari 
-                        WHERE u.email = %s AND d.nomDispositiu = %s"""
-                params = (emailUsuari, nomDispositiu)
-
-            else:
-                # Obtenir les dades d'un usuari específic
-                query = """SELECT d.id, d.idUsuariPropietari, d.nomDispositiu
-                        FROM dispositius d 
-                        INNER JOIN usuaris u 
-                            ON u.id = d.idUsuariPropietari 
-                        WHERE u.email = %s"""
-                params = (emailUsuari, )
-
-        elif idDispositiu:
+        if idDispositiu:
             # Obtenir les dades d'un dispositiu específic
                 query = """SELECT id, idUsuariPropietari, nomDispositiu
                         FROM dispositius
                         WHERE id = %s"""
                 params = (idDispositiu, )
-        
+
+        elif idUsuari:
+            if nomDispositiu:
+                # Obtenir les dades d'un nom de dispositiu i usuari
+                query = """SELECT id, idUsuariPropietari, nomDispositiu
+                        FROM dispositius 
+                        WHERE idUsuariPropietari = %s AND nomDispositiu = %s"""
+                params = (idUsuari, nomDispositiu)
+
+            else:
+                # Obtenir les dades d'un usuari específic
+                query = """SELECT id, idUsuariPropietari, nomDispositiu
+                        FROM dispositius
+                        WHERE idUsuariPropietari = %s"""
+                params = (idUsuari, )
+
         else:
-            # Obtenir les dades de tots els usuaris
+            # Obtenir les dades de tots els dispositius
             query = "SELECT id, idUsuariPropietari, nomDispositiu FROM dispositius"
             params = ()
 
@@ -620,7 +639,7 @@ def obtenirDadesDispositius():
 
     Mètode: GET
     Paràmetres de la URL:
-    - emailUsuari [opcional]: email de l'usuari del qual es volen obtenir les dades dels seus dispositius assignats.
+    - idUsuari [opcional]: id de l'usuari del qual es volen obtenir les dades dels seus dispositius assignats.
     - idDispositiu [opcional]: id del dispositiu del qual es volen obtenir les dades.
     - dataInici [opcional]: data a partir de la qual es volen obtenir dades.
     - dataFi [opcional]: data fins a la qual es volen obtenir dades.
@@ -632,15 +651,16 @@ def obtenirDadesDispositius():
       ```
     - Obtenir totes les dades d'un usuari:
       ```
-      GET /obtenirDadesDispositius?emailUsuari=usuari@exemple.com
+      GET /obtenirDadesDispositius?idUsuari=1
       ```
-    - Obtenir totes les dades d'un dispositiu a partir del id:
+    - Obtenir totes les dades d'un dispositiu a partir del id (té preferència respecte l'idUsuari si
+      s'indiquen els dos):
       ```
       GET /obtenirDadesDispositius?idDispositiu=id
       ```
     - Obtenir totes les dades d'un usuari indicant data inici i data fi
       ```
-      GET /obtenirDadesDispositius?emailUsuari=usuari@exemple.com&dataInici=2023-11-16 00:01:00&dataFi=31-12-2023 23:59:00
+      GET /obtenirDadesDispositius?idUsuari=1&dataInici=2023-11-16 00:01:00&dataFi=31-12-2023 23:59:00
       ```
     - Obtenir totes les dades d'un dispositiu indicant data inici i data fi
       ```
@@ -669,49 +689,12 @@ def obtenirDadesDispositius():
         - Error no controlat.
     """
     try:
-        emailUsuari = request.args.get('emailUsuari')
+        idUsuari = request.args.get('idUsuari')
         idDispositiu = request.args.get('idDispositiu')
         dataInici = request.args.get('dataInici')
         dataFi = request.args.get('dataFi')
 
-        if emailUsuari:
-            if dataInici:
-                if dataFi:
-                    #obtenir les dades d'un interval de temps d'un usuari
-                    query = """SELECT dades.idDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
-                        FROM dadesDispositius dades 
-                        INNER JOIN dispositius dispo 
-                            ON dispo.id = dades.idDispositiu 
-                        INNER JOIN usuaris user 
-                            ON dispo.idUsuariPropietari = user.id 
-                        WHERE user.email = %s
-                            AND dataHora >= %s
-                            AND dataHora <= %s"""
-                    params = (emailUsuari, dataInici, dataFi)
-
-                else:
-                    #obtenir les dades a partir d'una data d'un usuari
-                    query = """SELECT dades.idDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
-                        FROM dadesDispositius dades 
-                        INNER JOIN dispositius dispo 
-                            ON dispo.id = dades.idDispositiu 
-                        INNER JOIN usuaris user 
-                            ON dispo.idUsuariPropietari = user.id 
-                        WHERE user.email = %s
-                            AND dataHora >= %s"""
-                    params = (emailUsuari, dataInici)
-            else:
-                #obtenir totes les dades d'un usuari
-                query = """SELECT dades.idDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
-                        FROM dadesDispositius dades 
-                        INNER JOIN dispositius dispo 
-                            ON dispo.id = dades.idDispositiu 
-                        INNER JOIN usuaris user 
-                            ON dispo.idUsuariPropietari = user.id 
-                        WHERE user.email = %s"""
-                params = (emailUsuari, )
-
-        elif idDispositiu:
+        if idDispositiu:
             if dataInici:
                 if dataFi:
                     #obtenir les dades d'un interval de temps d'un dispositiu
@@ -742,6 +725,37 @@ def obtenirDadesDispositius():
                             ON dispo.id = dades.idDispositiu 
                         WHERE idDispositiu = %s"""
                 params = (idDispositiu, )
+
+        elif idUsuari:
+            if dataInici:
+                if dataFi:
+                    #obtenir les dades d'un interval de temps d'un usuari
+                    query = """SELECT dades.idDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
+                        FROM dadesDispositius dades 
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = dades.idDispositiu
+                        WHERE dispo.idUsuariPropietari = %s
+                            AND dataHora >= %s
+                            AND dataHora <= %s"""
+                    params = (idUsuari, dataInici, dataFi)
+
+                else:
+                    #obtenir les dades a partir d'una data d'un usuari
+                    query = """SELECT dades.idDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
+                        FROM dadesDispositius dades 
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = dades.idDispositiu 
+                        WHERE dispo.idUsuariPropietari = %s
+                            AND dataHora >= %s"""
+                    params = (idUsuari, dataInici)
+            else:
+                #obtenir totes les dades d'un usuari
+                query = """SELECT dades.idDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
+                        FROM dadesDispositius dades 
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = dades.idDispositiu 
+                        WHERE dispo.idUsuariPropietari = %s"""
+                params = (idUsuari, )
         
         else:
             # Obtenir totes les dades
@@ -790,13 +804,14 @@ def obtenirCanvisReg():
       ```
       GET /obtenirCanvisReg?idUsuari=1
       ```
-    - Obtenir totes les dades d'un dispositiu a partir del id:
+    - Obtenir totes les dades d'un dispositiu a partir del id (té preferència respecte l'idUsuari si
+      s'indiquen els dos):
       ```
       GET /obtenirCanvisReg?idDispositiu=id
       ```
     - Obtenir totes les dades d'un usuari indicant data inici i data fi
       ```
-      GET /obtenirCanvisReg?emailUsuari=usuari@exemple.com&dataInici=2023-11-16 00:01:00&dataFi=31-12-2023 23:59:00
+      GET /obtenirCanvisReg?idUsuari=usuari@1&dataInici=2023-11-16 00:01:00&dataFi=31-12-2023 23:59:00
       ```
     - Obtenir totes les dades d'un dispositiu indicant data inici i data fi
       ```
@@ -830,38 +845,7 @@ def obtenirCanvisReg():
         dataInici = request.args.get('dataInici')
         dataFi = request.args.get('dataFi')
 
-        if idUsuari:
-            if dataInici:
-                if dataFi:
-                    #obtenir les dades d'un interval de temps d'un usuari
-                    query = """SELECT reg.idDispositiu, reg.dataHora, reg.estatReg 
-                        FROM canvisReg reg
-                        INNER JOIN dispositius dispo 
-                            ON dispo.id = reg.idDispositiu 
-                        WHERE dispo.idUsuariPropietari = %s
-                            AND dataHora >= %s
-                            AND dataHora <= %s"""
-                    params = (idUsuari, dataInici, dataFi)
-
-                else:
-                    #obtenir les dades a partir d'una data d'un usuari
-                    query = """SELECT reg.idDispositiu, reg.dataHora, reg.estatReg 
-                        FROM canvisReg reg
-                        INNER JOIN dispositius dispo 
-                            ON dispo.id = reg.idDispositiu 
-                        WHERE dispo.idUsuariPropietari = %s
-                            AND dataHora >= %s"""
-                    params = (idUsuari, dataInici)
-            else:
-                #obtenir totes les dades d'un usuari
-                query = """SELECT reg.idDispositiu, reg.dataHora, reg.estatReg 
-                        FROM canvisReg reg
-                        INNER JOIN dispositius dispo 
-                            ON dispo.id = reg.idDispositiu 
-                        WHERE dispo.idUsuariPropietari = %s"""
-                params = (idUsuari,)
-
-        elif idDispositiu:
+        if idDispositiu:
             if dataInici:
                 if dataFi:
                     #obtenir les dades d'un interval de temps d'un dispositiu
@@ -892,6 +876,37 @@ def obtenirCanvisReg():
                             ON dispo.id = reg.idDispositiu 
                         WHERE reg.idDispositiu = %s"""
                 params = (idDispositiu, )
+
+        elif idUsuari:
+            if dataInici:
+                if dataFi:
+                    #obtenir les dades d'un interval de temps d'un usuari
+                    query = """SELECT reg.idDispositiu, reg.dataHora, reg.estatReg 
+                        FROM canvisReg reg
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = reg.idDispositiu 
+                        WHERE dispo.idUsuariPropietari = %s
+                            AND dataHora >= %s
+                            AND dataHora <= %s"""
+                    params = (idUsuari, dataInici, dataFi)
+
+                else:
+                    #obtenir les dades a partir d'una data d'un usuari
+                    query = """SELECT reg.idDispositiu, reg.dataHora, reg.estatReg 
+                        FROM canvisReg reg
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = reg.idDispositiu 
+                        WHERE dispo.idUsuariPropietari = %s
+                            AND dataHora >= %s"""
+                    params = (idUsuari, dataInici)
+            else:
+                #obtenir totes les dades d'un usuari
+                query = """SELECT reg.idDispositiu, reg.dataHora, reg.estatReg 
+                        FROM canvisReg reg
+                        INNER JOIN dispositius dispo 
+                            ON dispo.id = reg.idDispositiu 
+                        WHERE dispo.idUsuariPropietari = %s"""
+                params = (idUsuari,)
         
         else:
             # Obtenir totes les dades
@@ -953,6 +968,9 @@ def obtenirUltimReg():
     """
     try:
         idDispositiu = request.args.get('idDispositiu')
+
+        if idDispositiu is None:
+            return jsonify({'success': False, 'error': f"'idDispositiu' no especificat"}), 400
 
         try: 
             params_lastReg = (idDispositiu, )
