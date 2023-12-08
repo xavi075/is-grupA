@@ -15,6 +15,8 @@ CREATE TABLE dispositius (
     id INT AUTO_INCREMENT PRIMARY KEY,
     idUsuariPropietari INT,
     nomDispositiu VARCHAR(50),
+    nivellMinimReg DECIMAL,
+    nivellMaximReg DECIMAL,
     FOREIGN KEY (idUsuariPropietari) REFERENCES usuaris (id)  
 );
 
@@ -70,19 +72,19 @@ FOR EACH ROW
 BEGIN
     DECLARE num_dispositius INT;
 
-    SELECT COUNT(*) INTO num_dispositius
-    FROM dispositius
-    WHERE idUsuariPropietari = NEW.idUsuariPropietari
-      AND nomDispositiu = NEW.nomDispositiu;
+    IF NOT (NEW.idUsuariPropietari = OLD.idUsuariPropietari AND NEW.nomDispositiu = OLD.nomDispositiu) THEN
+        SELECT COUNT(*) INTO num_dispositius
+        FROM dispositius
+        WHERE idUsuariPropietari = NEW.idUsuariPropietari
+        AND nomDispositiu = NEW.nomDispositiu;
 
-    IF num_dispositius > 0 THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'Error: El usuari ja té un dispositiu amb el mateix nom';
+        IF num_dispositius > 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Error: El usuari ja té un dispositiu amb el mateix nom';
+        END IF;
     END IF;
-END;
+END 
 //
-DELIMITER ;
-
 
 -- trigger per verificar que els estats del reg inserit només siguin 0 o 1
 CREATE TRIGGER verifica_estatReg

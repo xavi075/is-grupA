@@ -181,6 +181,8 @@ def inserirDispositiu():
     {
         "idUsuariPropietari": 1 / None,
         "nomDispositiu": "Nom del dispositiu" / None
+        "llindarMinimReg": 1,
+        "llindarMaximReg": 100
     }
     ```
 
@@ -207,10 +209,12 @@ def inserirDispositiu():
 
         idUsuari = dades_json.get('idUsuariPropietari')
         nomDispositiu = dades_json.get('nomDispositiu')
+        llindarMin = dades_json.get('llindarMinimReg')
+        llindarMax = dades_json.get('llindarMaximReg')
 
         db.començaTransaccio()
         try:
-            db.insert('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu})
+            db.insert('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu, 'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax})
         except Exception as e:
             db.rollback()
             return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
@@ -451,7 +455,9 @@ def assignaDispositiuUsuari():
     {
         "idDispositiu": 1
         "idUsuari": 1,
-        "nomDispositiu": "dispo_exemple"
+        "nomDispositiu": "dispo_exemple",
+        "llindarMinimReg": 1,
+        "llindarMaximReg": 100
     }
     ```
 
@@ -478,6 +484,8 @@ def assignaDispositiuUsuari():
         idDispositiu = dades_json.get('idDispositiu')
         idUsuari = dades_json.get('idUsuari')
         nomDispositiu = dades_json.get('nomDispositiu')
+        llindarMin = dades_json.get('llindarMinimReg')
+        llindarMax = dades_json.get('llindarMaximReg')
 
         if idDispositiu is None:
             return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
@@ -507,7 +515,7 @@ def assignaDispositiuUsuari():
                     else:
                         db.començaTransaccio()
                         try:
-                            db.update('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu}, "id = " + str(idDispositiu))
+                            db.update('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu, 'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax}, "id = " + str(idDispositiu))
 
                         except Exception as e:
                             db.rollback()
@@ -517,7 +525,6 @@ def assignaDispositiuUsuari():
                             db.commit()
                             return jsonify({'success': True})
 
-    
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
 
@@ -596,6 +603,71 @@ def modificaContrasenya():
                         return jsonify({'success': True})
                 else:
                     return jsonify({'success': False, 'error': "contrasenya incorrecta"}), 400
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+@app.route('/modificaLlindars', methods = ['POST'])
+def modificaLLindars():
+    """
+    Endpoint de Flask per modificar els llindars d'un dispositiu.
+
+    Mètode: POST
+    Format de dades esperat: JSON
+
+    Exemple de sol·licitud:
+    ```
+    POST /inserirDada
+    {
+        "idDispositiu": 1,
+        "llindarMinimReg": 1,
+        "llindarMaximReg": 100
+    }
+    ```
+
+    Respostes possibles:
+    - 200 OK: Indica si s'han modificat els llindars del dispositiu correctament.
+        ```json
+        {
+            "success" = True
+        }
+        ```
+    - 400 Bad Request: Si es proporcionen paràmetres incorrectes.
+        - Si no es proporciona un JSON en la sol·licitud.
+        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
+    - 500 Internal Server Error: 
+        - Error al consultar la base de dades.
+        - Error no controlat.
+    """
+    try: 
+        try: 
+            dades_json = request.json
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
+
+        idDispositiu = dades_json.get('idDispositiu')
+        llindarMin = dades_json.get('llindarMinimReg')
+        llindarMax = dades_json.get('llindarMaximReg')
+
+        if idDispositiu is None:
+            return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
+        elif llindarMin is None:
+            return jsonify({'success': False, 'error': f"Camp 'llindarMinimReg' no especificat en el JSON"}), 400
+        elif llindarMax is None:
+            return jsonify({'success': False, 'error': f"Camp 'llindarMaximReg' no especificat en el JSON"}), 400
+        
+        else:
+            db.començaTransaccio()
+            try:
+                db.update('dispositius', {'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax}, "id = " + str(idDispositiu))
+
+            except Exception as e:
+                db.rollback()
+                return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
+            
+            else:
+                db.commit()
+                return jsonify({'success': True})
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -723,8 +795,8 @@ def obtenirDispositius():
             "success" = True,
             "dades": 
             [
-                {"id": 1, "idUsuariPropietari": 1, nomDispositiu: "nom_Dispositiu1"},
-                {"id": 2, "idUsuariPropietari": 1, nomDispositiu: "nom_Dispositiu2"},
+                {"id": 1, "idUsuariPropietari": 1, nomDispositiu: "nom_Dispositiu1", llindarMinimReg: 16.9, llindarMaximReg: 87.74},
+                {"id": 2, "idUsuariPropietari": 1, nomDispositiu: "nom_Dispositiu2", llindarMinimReg: 52.23, llindarMaximReg: 60},
                 ...
             ]
         }
@@ -743,7 +815,7 @@ def obtenirDispositius():
 
         if idDispositiu:
             # Obtenir les dades d'un dispositiu específic
-                query = """SELECT id, idUsuariPropietari, nomDispositiu
+                query = """SELECT id, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
                         FROM dispositius
                         WHERE id = %s"""
                 params = (idDispositiu, )
@@ -751,21 +823,21 @@ def obtenirDispositius():
         elif idUsuari:
             if nomDispositiu:
                 # Obtenir les dades d'un nom de dispositiu i usuari
-                query = """SELECT id, idUsuariPropietari, nomDispositiu
+                query = """SELECT id, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
                         FROM dispositius 
                         WHERE idUsuariPropietari = %s AND nomDispositiu = %s"""
                 params = (idUsuari, nomDispositiu)
 
             else:
                 # Obtenir les dades d'un usuari específic
-                query = """SELECT id, idUsuariPropietari, nomDispositiu
+                query = """SELECT id, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
                         FROM dispositius
                         WHERE idUsuariPropietari = %s"""
                 params = (idUsuari, )
 
         else:
             # Obtenir les dades de tots els dispositius
-            query = "SELECT id, idUsuariPropietari, nomDispositiu FROM dispositius"
+            query = "SELECT id, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg FROM dispositius"
             params = ()
 
         try: 
@@ -779,7 +851,9 @@ def obtenirDispositius():
                 {
                     "id": dispo[0],
                     "idUsuariPropietari": dispo[1],
-                    "nomDispositiu": dispo[2]
+                    "nomDispositiu": dispo[2],
+                    "llindarMinimReg": dispo[3],
+                    "llindarMaximReg": dispo[4]
                 }
                 for dispo in dades_dispositius
             ]
