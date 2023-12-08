@@ -426,7 +426,6 @@ def verificaLogIn():
                 credencials = False
                 idUsuari = None
             else: # l'usuari es troba a la bbdd
-                print(dades)
                 idUsuari = dades[0][0]
                 contrasenya_hash_db = dades[0][1]
                 contrasenya_hash_usuari = hashlib.sha256(contrasenya.encode()).hexdigest()
@@ -519,6 +518,85 @@ def assignaDispositiuUsuari():
                             return jsonify({'success': True})
 
     
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+@app.route('/modificaContrasenya', methods = ['POST'])
+def modificaContrasenya():
+    """
+    Endpoint de Flask per modificar la contrasenya d'un usuari. Per tal de modificar-la és necessari
+    indicar la contrasenya actual i que aquesta sigui correcta.
+
+    Mètode: POST
+    Format de dades esperat: JSON
+
+    Exemple de sol·licitud:
+    ```
+    POST /inserirDada
+    {
+        "idUsuari": 1,
+        contrasenya: "1234",
+        "novaContrasenya": "12345"
+    }
+    ```
+
+    Respostes possibles:
+    - 200 OK: Indica si s'ha modificat la contrasenya correctament
+        ```json
+        {
+            "success" = True
+        }
+        ```
+    - 400 Bad Request: Si es proporcionen paràmetres incorrectes.
+        - Si no es proporciona un JSON en la sol·licitud.
+        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
+    - 500 Internal Server Error: 
+        - Error al consultar la base de dades.
+        - Error no controlat.
+    """
+    try:
+        try: 
+            dades_json = request.json
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
+
+        idUsuari = dades_json.get('idUsuari')
+        contrasenya = dades_json.get('contrasenya')
+        novaContrasenya = dades_json.get('novaContrasenya')
+
+        if idUsuari is None:
+            return jsonify({'success': False, 'error': f"Camp 'idUsuari' no especificat en el JSON"}), 400
+        elif contrasenya is None:
+            return jsonify({'success': False, 'error': f"Camp 'contrasenya' no especificat en el JSON"}), 400
+        elif novaContrasenya is None:
+            return jsonify({'success': False, 'error': f"Camp 'novaContrasenya' no especificat en el JSON"}), 400
+        
+        try: 
+            dades = db.executaQuery("SELECT contrasenya_hash FROM usuaris WHERE id = %s", (idUsuari, ))
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+        
+        else:     
+            if len(dades) == 0: # l'usuari no es troba a la bbdd
+                return jsonify({'success': False, 'error': "l'usuari " + str(idUsuari) + " no es troba a la base de dades"}), 400
+            else: # l'usuari es troba a la bbdd
+                contrasenya_hash_db = dades[0][0]
+                contrasenya_hash_usuari = hashlib.sha256(contrasenya.encode()).hexdigest()
+
+                if contrasenya_hash_db == contrasenya_hash_usuari:
+                    novaContrasenya_hash = hashlib.sha256(novaContrasenya.encode()).hexdigest()
+                    try:
+                        db.començaTransaccio()
+                        db.update('usuaris', {'contrasenya_hash': novaContrasenya_hash}, "id = " + str(idUsuari))
+                    except Exception as e:
+                        return jsonify({'success': False, 'error': f"Error al modificar la contrasenya: {str(e)}"}), 500
+                    else:
+                        db.commit()
+                        return jsonify({'success': True})
+                else:
+                    return jsonify({'success': False, 'error': "contrasenya incorrecta"}), 400
+
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
 
