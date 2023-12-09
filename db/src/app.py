@@ -1320,7 +1320,11 @@ def obtenirUltimaDadaDispositiu():
 
     - Obtenir la última dada d'un dispositiu en concret:
       ```
-      GET /obtenirUltimaDadaDispositiu?idDispositiu=id
+      GET /obtenirUltimaDadaDispositiu?idDispositiu=1
+      ```
+    - Obtenir la última dada de tots els dispositius d'un usuari:
+      ```
+      GET /obtenirUltimaDadaDispositiu?idUsuari=1
       ```
 
      Respostes possibles:
@@ -1330,7 +1334,21 @@ def obtenirUltimaDadaDispositiu():
             "success" = True,
             "dades": 
             [
-                {"idDispositiu": 1, "dataHora": "2023-11-16 12:31:00", dadaHum: 15, dadaTemp: 14},
+                {
+                    "idDispositiu": 1, 
+                    "nomDispositiu": "nom_dispositiu",
+                    "dataHora": "2023-11-16 12:31:00", 
+                    dadaHum: 15, 
+                    dadaTemp: 14
+                },
+                {
+                    "idDispositiu": 2, 
+                    "nomDispositiu": "nom_dispositiu2",
+                    "dataHora": "2023-11-16 12:35:00", 
+                    dadaHum: 57.8, 
+                    dadaTemp: 40.3
+                },
+                ...
             ]
         }
         ```
@@ -1343,38 +1361,83 @@ def obtenirUltimaDadaDispositiu():
     """
     try:
         idDispositiu = request.args.get('idDispositiu')
+        idUsuari = request.args.get('idUsuari')
 
         if idDispositiu:
-            query = """SELECT idDispositiu, dataHora, dadaHum, dadaTemp 
-            FROM dadesDispositius 
+            query = """SELECT dispo.id, dispo.nomDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
+            FROM dadesDispositius dades
+            INNER JOIN dispositius dispo
+                ON dispo.id = dades.idDispositiu
             WHERE idDispositiu = %s
             ORDER BY dataHora DESC 
             LIMIT 1"""
             params = (idDispositiu, )
-        
-        else:
-            return jsonify({'success': False, 'error': f"'idDispositiu' no especificat"}), 400
 
-        try: 
-            dades = db.executaQuery(query, params)
+            try: 
+                dades = db.executaQuery(query, params)
 
-        except Exception as e:
-            return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
-        
-        else:     
-            if len(dades) == 0:
-                dades_formatejades = []
+            except Exception as e:
+                return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+            
+            else:     
+                if len(dades) == 0:
+                    dades_formatejades = []
+                else:
+                    dada = dades[0]
+                    dades_formatejades = [
+                        {
+                            "idDispositiu": dada[0],
+                            "nomDispositiu": dada[1],
+                            "dataHora": dada[2],
+                            "dadaHum": dada[3],
+                            "dadaTemp": dada[4]
+                        }
+                    ]
+                return jsonify({'success': True, 'dades': dades_formatejades})
+            
+        elif idUsuari:
+            #obtenim els dispositius d'un usuari
+            query = "SELECT id FROM dispositius WHERE idUsuariPropietari = %s"
+            params = (idUsuari, )
+            try:
+                dispos = db.executaQuery(query, params)
+            except Exception as e:
+                return jsonify({'success': False, 'error': f"Error al consultar els dispositius de l'usuari: {str(e)}"}), 500
             else:
-                dada = dades[0]
-                dades_formatejades = [
-                    {
-                        "idDispositiu": dada[0],
-                        "dataHora": dada[1],
-                        "dadaHum": dada[2],
-                        "dadaTemp": dada[3]
-                    }
-                ]
+                dades_formatejades = []
+                if len(dispos) != 0:
+                    query = """SELECT dispo.id, dispo.nomDispositiu, dades.dataHora, dades.dadaHum, dades.dadaTemp 
+                            FROM dadesDispositius dades
+                            INNER JOIN dispositius dispo
+                                ON dispo.id = dades.idDispositiu
+                            WHERE idDispositiu = %s
+                            ORDER BY dataHora DESC 
+                            LIMIT 1"""
+                    for dispo in dispos:
+                        params = (dispo[0], )
+                        try: 
+                            dades = db.executaQuery(query, params)
+
+                        except Exception as e:
+                            return jsonify({'success': False, 'error': f"Error al consultar dades del dispositiu {str(dispo[0])}: {str(e)}"}), 500
+                        
+                        else:     
+                            if len(dades) != 0:
+                                dada = dades[0]
+                                dades_formatejades.append(
+                                    {
+                                        "idDispositiu": dada[0],
+                                        "nomDispositiu": dada[1],
+                                        "dataHora": dada[2],
+                                        "dadaHum": dada[3],
+                                        "dadaTemp": dada[4]
+                                    }
+                                )
+
             return jsonify({'success': True, 'dades': dades_formatejades})
+
+        else:
+            return jsonify({'success': False, 'error': f"'idDispositiu' ni 'idUsuari' no especificat"}), 400
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
