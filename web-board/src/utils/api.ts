@@ -1,4 +1,4 @@
-import { ILogged, ILastInfo, IUserDevices } from "./interfaces";
+import { ILogged, ILastInfo, IUserDevices, IRegister } from "./interfaces";
 
 const ENDPOINT = 'http://192.168.1.21:5000';
 
@@ -20,6 +20,23 @@ export function loginRequest(emailUsuari:string, contrasenya: string): Promise<I
       return res 
   })
 }
+
+export function registerRequest(email:string, nomUsuari: string, contrasenya: string): Promise<IRegister> {
+  return fetch(`${ENDPOINT}/inserirUsuari`, {
+      method: 'POST',
+      headers: {
+          "Content-type": "application/json"
+      },
+      body: JSON.stringify({email, nomUsuari, contrasenya})
+  }).then(res => {
+      if (!res.ok) throw new Error('Response is not OK')
+      return res.json()
+  }).then( res => {
+      return res 
+  })
+}
+
+
 
 export function changePwdRequest(usernameId:string, oldPassword:string, newPassword: string): Promise<ILogged> {
   //TO-DO: Assegurar destí de la request al servidor

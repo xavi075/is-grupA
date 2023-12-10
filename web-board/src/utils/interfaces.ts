@@ -4,6 +4,11 @@ export interface ILogged {
   success: boolean
 }
 
+export interface IRegister {
+  success: boolean
+  idUsuariInsertat: number | null
+}
+
 export interface IChangedPwd {
   success: boolean
 }
