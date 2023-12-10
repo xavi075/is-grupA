@@ -2,7 +2,6 @@
 .navbar {
   background-color: #007ABF;
   padding: 20px;
-
 }
   
 .navbar-brand {
@@ -38,6 +37,26 @@
 }
 
 @media (max-width: 768px) {
+
+
+  .navbar {
+    padding: 10px;
+    width: 100vw;
+  }
+
+  .navbar-brand {
+    font-size: 24px;
+  }
+
+  .nav-link {
+    font-size: 14px;
+    margin-left: 10px;
+    margin-right: 10px;
+  }
+}
+
+
+/* @media (max-width: 768px) {
   .navbar {
     padding: 10px;
   }
@@ -51,7 +70,22 @@
     margin-left: 10px;
     margin-right: 10px;
   }
-}
+
+  /* .navbar-toggler {
+    border: none;
+  }
+
+  .navbar-nav {
+    text-align: center; 
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .navbar-nav .nav-item {
+    display: inline-block;
+    margin-bottom: 10px; 
+  }
+} */
 
   
   

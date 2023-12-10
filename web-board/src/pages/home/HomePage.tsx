@@ -6,7 +6,6 @@ export function HomePage() {
     <>           
     <div className="page-container">
       <div className="column">
-        <h2>Home Page</h2>
         <CurrentParameters />
       </div>
       <div className="column">

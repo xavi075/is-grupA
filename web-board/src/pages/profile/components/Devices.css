@@ -1,0 +1,40 @@
+.account-box {
+    width: 90%;
+    min-width: 400px;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+  }
+  
+  .account-box h2 {
+    color: #007ABF;
+  }
+  
+  .add-device-link {
+    display: inline-block;
+    margin-top: 30px;
+    padding: 10px 20px;
+    color: #fff;
+    background-color: #007ABF;
+    text-decoration: none;
+    border: 1px solid #007ABF;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  
+  .add-device-link:hover {
+    background-color: #ffffff;
+    color: #007ABF;
+    text-decoration: underline;
+  }
+  
+  @media (max-width: 768px) {
+    .account-box {
+      padding: 15px;
+    }
+  }
+    
