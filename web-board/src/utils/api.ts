@@ -26,7 +26,7 @@ export function changePwdRequest(usernameId:string, oldPassword:string, newPassw
   return fetch(`${ENDPOINT}/canviarContrassenya`, {
       method: 'POST',
       headers: {
-          "Content-type": "aplication/json"
+          "Content-type": "application/json"
       },
       body: JSON.stringify({usernameId, newPassword})
   }).then(res => {
@@ -41,7 +41,7 @@ export function getLastInfo (usernameId: string): Promise<ILastInfo> {
     return fetch(`${ENDPOINT}/ENCARAPERDECIDIR/${usernameId}`, {
         method: 'GET',
         headers: {
-            "Content-type": "aplication/json"
+            "Content-type": "application/json"
         },
     }).then(res => {
         if (!res.ok) throw new Error('Response is not OK')
@@ -55,7 +55,7 @@ export function getUserDevices (usernameId: string): Promise<IUserDevices> {
     return fetch(`${ENDPOINT}/ENCARAPERDECIDIR/${usernameId}`, {
         method: 'GET',
         headers: {
-            "Content-type": "aplication/json"
+            "Content-type": "application/json"
         },
     }).then(res => {
         if (!res.ok) throw new Error('Response is not OK')
@@ -69,7 +69,7 @@ export function getAvailableDevices (): Promise<IUserDevices> {
   return fetch(`${ENDPOINT}/ENCARAPERDECIDIR/`, {
       method: 'GET',
       headers: {
-          "Content-type": "aplication/json"
+          "Content-type": "application/json"
       },
   }).then(res => {
       if (!res.ok) throw new Error('Response is not OK')
