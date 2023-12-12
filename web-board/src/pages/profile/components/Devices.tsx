@@ -33,17 +33,17 @@ const Devices =  () => {
         .catch((error) => {
           console.error('Error when obtaining branches (Username or password incorrect): ', error);
         });
-      
-      getAvailableDevices()
+      if (NewDevice) {
+        getAvailableDevices()
         .then((response) => {
           setAvailableDevices(response)
         })
         .catch((error) => {
-          console.error('Error when obtaining branches (Username or password incorrect): ', error);
+          console.error('Available devices error: ', error);
         });
-      
+      }
     }
-  })
+  }, [])
 
   return(
     <div className="account-box">
@@ -58,11 +58,12 @@ const Devices =  () => {
           </tr>
         </thead>
         <tbody>
-          {UserDevices?.dispositius.map((dispositiu) => (
-            <tr>
-              <td>{dispositiu.idDispositiu}</td>
-              {/* TO-DO: llindar min i maxim */}
-              <td><Link className="logout-link" to="#" onClick={DeleteDevice}>Elimina'l</Link></td>
+          {UserDevices?.dades.map((dispositiu) => (
+            <tr key={`grup-${dispositiu.nomDispositiu}`}>
+              <td key={`${dispositiu.nomDispositiu}`}>{dispositiu.nomDispositiu}</td>
+              <td key={`${dispositiu.llindarMinimReg}`}>{dispositiu.llindarMinimReg}</td>
+              <td key={`${dispositiu.llindarMaximReg}`}>{dispositiu.llindarMaximReg}</td>
+              <td key={`accions-${dispositiu}`}><Link className="logout-link" to="#" onClick={DeleteDevice}>Elimina'l</Link></td>
             </tr>
           ))}
         </tbody>

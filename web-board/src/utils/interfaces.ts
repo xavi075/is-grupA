@@ -25,7 +25,10 @@ export interface ILastInfo {
 
 export interface IUserDevices {
   success: boolean,
-  dispositius: Array<{
-    idDispositiu: number
+  dades: Array<{
+    id: number
+    nomDispositiu: string
+    llindarMinimReg: number
+    llindarMaximReg: number
   }>
 }

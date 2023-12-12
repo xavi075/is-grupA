@@ -27,7 +27,7 @@ const Login =  () => {
           setLoginInfo(response);
           if (response?.success){
             if (response.credencialsTrobades && response.idUsuari != null){
-              window.sessionStorage.setItem('username', response.idUsuari.toString())
+              window.sessionStorage.setItem('usernameId', response.idUsuari.toString())
               setUserNameId(response.idUsuari.toString());
               setLoggedIn(!!response.idUsuari);
               setIncorrectLogin(false);
@@ -58,7 +58,7 @@ const Login =  () => {
             // }
             if (response.idUsuariInsertat != null){
               console.log(response.idUsuariInsertat)
-              window.sessionStorage.setItem('username', response.idUsuariInsertat.toString())
+              window.sessionStorage.setItem('usernameId', response.idUsuariInsertat.toString())
               setUserNameId(response.idUsuariInsertat.toString());
               setLoggedIn(!!response.idUsuariInsertat);
               setIncorrectLogin(false);
@@ -83,7 +83,7 @@ const Login =  () => {
         <div className="form-container login-container">
             <Form className="custom-form" onSubmit={handleLogin}>
             <h2>Inicia sessió</h2>
-            {IncorrectLogin && <span className='incorrect-message'>Correu electrònic o contrassenya incorrectes. Torna a provar</span>}
+            {IncorrectLogin && <span className='incorrect-message'>Correu electrònic o contrasenya incorrectes. Torna a provar</span>}
             <Form.Group controlId="formBasicUsername">
               <Form.Label className="custom-label"><FontAwesomeIcon icon="envelope" style={{ color: "#007ABF" }} /> Correu electrònic </Form.Label>
               <Form.Control className="custom-input" type="email" placeholder="exemple@exemple.com" value={mail} onChange={(e) => setMail(e.target.value)} />

@@ -1,6 +1,6 @@
 import { ILogged, ILastInfo, IUserDevices, IRegister } from "./interfaces";
 
-const ENDPOINT = 'http://192.168.1.21:5000';
+const ENDPOINT = 'http://127.0.0.1:5000';
 
 // const headers = {
 //   'Content-Type': 'application/json'
@@ -69,7 +69,7 @@ export function getLastInfo (usernameId: string): Promise<ILastInfo> {
 }
 
 export function getUserDevices (usernameId: string): Promise<IUserDevices> {
-    return fetch(`${ENDPOINT}/ENCARAPERDECIDIR/${usernameId}`, {
+    return fetch(`${ENDPOINT}/obtenirDispositius?idUsuari=${usernameId}`, {
         method: 'GET',
         headers: {
             "Content-type": "application/json"

@@ -21,7 +21,7 @@ const LastInfo = () => {
           console.error('Error when obtaining branches (Username or password incorrect): ', error);
         });
     }
-  })
+  }, [])
 
   return (
     // <div>
