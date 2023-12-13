@@ -31,6 +31,29 @@ CORS(app, resources = {"r/*": {"origins": "http://localhost:3000"}})
 db = mariaDBConn('localhost', 'ferran', '3007', 'integracioSistemes')
 db.conecta()
 
+# llista en la qual es guarden els llindars que s'han modificat. S'emmagatzemen en forma de diccionaris
+# amb la forma següent: {'idDispositiu': (int), 'llindarMinimReg': (decimal), 'llindarMaximReg': (decimal)}
+llindarsModificats = []
+
+def __posicio_llindarDispositiu(idDispositiu):
+    """
+    Per saber la posició on es troba la modificació del llindar d'un dispositiu de la llista 
+    llindarsModificats.  
+
+    Args:
+        idDispositiu (int): identificador del dispositiu del qual es vol saber els llindars.
+
+    Returns:
+        int: Retorna la posició on es troba la modificació del llindar d'un dispositiu de la llista 
+            llindarsModificats. Si no troba cap modificació de llindars pel dispositiu, retorna -1.  
+    """
+    for i, dict in enumerate(llindarsModificats):
+        if dict['idDispositiu'] == idDispositiu:
+            return i
+
+    else:
+        return -1    
+    
 @app.route('/inserirProva', methods = ['POST'])
 def inserirProva():
     """
@@ -443,7 +466,9 @@ def modificaContrasenya():
 @app.route('/modificaLlindars', methods = ['POST'])
 def modificaLLindars():
     """
-    Endpoint de Flask per modificar els llindars d'un dispositiu.
+    Endpoint de Flask per modificar els llindars d'un dispositiu. S'emmagatzemen els llindars modificats
+    per si es demana en la petició GET /obtenirModificacionsLlindars. Si ja hi ha algun canvi de
+    llindar entrat, se'l substitueix.
     """
     try: 
         try: 
@@ -473,6 +498,16 @@ def modificaLLindars():
             
             else:
                 db.commit()
+                
+                posLlindarDispo = __posicio_llindarDispositiu(idDispositiu)
+                if posLlindarDispo != -1: # el dispositiu té un llindar modificat guardat
+                    llindarsModificats.pop(posLlindarDispo)
+                
+                # en aquest punt sabem que no es troba cap llindar del dispositiu guardat
+                llindarsModificats.append({'idDispositiu': idDispositiu, \
+                                           'llindarMinimReg': llindarMin, \
+                                            'llindarMaximReg': llindarMax})
+                
                 return jsonify({'success': True})
 
     except Exception as e:
@@ -965,6 +1000,29 @@ def obtenirUltimaDadaDispositiu():
 
         else:
             return jsonify({'success': False, 'error': f"'idDispositiu' ni 'idUsuari' no especificat"}), 400
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+@app.route('/obtenirModificacionsLlindars', methods = ['GET'])
+def obtenirModificacionsLlindars():
+    """
+    Endpoint de flask per obtenir la última modificació en els llindars de reg de dispositius.
+    Si es demana d'un dispositiu, com que ja s'ha comunicat el canvi en el llindar, es borra de la llista.
+    """
+    try:
+        idDispositiu = request.args.get('idDispositiu')
+        if idDispositiu:
+            idDispositiu_int = int(idDispositiu)
+            posLlindarDispo = __posicio_llindarDispositiu(idDispositiu_int)
+            if posLlindarDispo == -1: # el dispositiu no té un llindar modificat guardat
+                return jsonify({'success': True, 'dades': []})
+            else:
+                llindars = llindarsModificats.pop(posLlindarDispo)
+                return jsonify({'success': True, 'dades': llindars})
+
+        else:
+            return jsonify({'success': True, 'dades': llindarsModificats})
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
