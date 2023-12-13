@@ -23,9 +23,10 @@ from mariaDB import mariaDBConn
 import hashlib
 from datetime import datetime
 import pytz
-
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app, resources = {"r/*": {"origins": "http://localhost:3000"}})
 # connexió a la base de dades
 db = mariaDBConn('localhost', 'ferran', '3007', 'integracioSistemes')
 db.conecta()
@@ -171,35 +172,6 @@ def inserirDispositiu():
     """
     Endpoint de Flask per inserir dades a la taula dispositius. Permet inserir un dispositiu no assignat a
     cap usuari.
-
-    Mètode: POST
-    Format de dades esperat: JSON
-
-    Exemple de sol·licitud:
-    ```
-    POST /inserirDispositiu
-    {
-        "idUsuariPropietari": 1 / None,
-        "nomDispositiu": "Nom del dispositiu" / None
-        "llindarMinimReg": 1,
-        "llindarMaximReg": 100
-    }
-    ```
-
-    Respostes possibles:
-    - 200 OK: Dades insertades correctament. Especifica el id intern que se li ha assignat al dispositiu insertat.
-        ```json
-        {
-            "success" = True,
-            "idDispositiuInsertat": id
-        }   
-        ```
-    - 400 Bad Request:
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
-    - 500 Internal Sever Error: 
-        - Error al inserir les dades a la base de dades.
-        - Error no controlat.
     """
     try: 
         try: 
@@ -230,33 +202,6 @@ def inserirDispositiu():
 def inserirDadesDispositiu():
     """
     Endpoint de Flask per inserir dades a la taula dadesDispositius.
-
-    Mètode: POST
-    Format de dades esperat: JSON
-
-    Exemple de sol·licitud:
-    ```
-    POST /inserirDada
-    {
-        "idDispositiu": 1,
-        "dadaHum": 45.14,
-        "dadaTemp": 16.2,
-    }
-    ```
-
-    Respostes possibles:
-    - 200 OK: Dades insertades correctament.
-        ```json
-        {
-            "success" = True,
-        }   
-        ```
-    - 400 Bad Request:
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
-    - 500 Internal Sever Error: 
-        - Error al inserir les dades a la base de dades.
-        - Error no controlat.
     """
     try: 
         try: 
@@ -295,34 +240,6 @@ def inserirEstatReg():
     """
     Endpoint de Flask per inserir dades a la taula canvisReg. Aquest només insereix és els canvis, és a dir
     només insereix la dada si la última dada del dispositiu és diferent.
-
-    Mètode: POST
-    Format de dades esperat: JSON
-
-    Exemple de sol·licitud:
-    ```
-    POST /inserirDada
-    {
-        "idDispositiu": 1,
-        "estatReg": 1
-    }
-    ```
-
-    Respostes possibles:
-    - 200 OK: No hi ha hagut errors en l'execució. S'indica si la dada s'ha inserit o no depenent de
-        si és diferent o no a l'última dada guardada.
-        ```json
-        {
-            "success" = True,
-            'dadaInserida': True / False
-        }   
-        ```
-    - 400 Bad Request:
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
-    - 500 Internal Sever Error: 
-        - Error al inserir les dades a la base de dades.
-        - Error no controlat.
     """
     try: 
         try: 
@@ -375,35 +292,7 @@ def verificaLogIn():
     """
     Endpoint de Flask per obtenir si les credencials de log in es corresponen a les credencials
     de la base de dades. Si troba les credencials, retorna el identificador de l'usuari per facilitar
-    el logIn. 
-
-    Mètode: POST
-    Format de dades esperat: JSON
-
-    Exemple de sol·licitud:
-    ```
-    POST /inserirDada
-    {
-        "emailUsuari": "usuari@exemple.com,
-        "contrasenya": "1234"
-    }
-    ```
-
-    Respostes possibles:
-    - 200 OK: Indica si s'ha trobat una coincidència de les credencials a la base de dades
-        ```json
-        {
-            "success" = True,
-            "credencialsTrobades": True / False
-            "idUsuari": 1 / None
-        }
-        ```
-    - 400 Bad Request: Si es proporcionen paràmetres incorrectes.
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
-    - 500 Internal Server Error: 
-        - Error al consultar la base de dades.
-        - Error no controlat.
+    el logIn.
     """
     try:
         try: 
@@ -445,35 +334,6 @@ def assignaDispositiuUsuari():
     """
     Endpoint de Flask per assignar un dispositiu a un usuari. Només permet assignar-lo si el dispositiu
     està desassignat, és a dir que no està assignat a cap altra usuari.
-
-    Mètode: POST
-    Format de dades esperat: JSON
-
-    Exemple de sol·licitud:
-    ```
-    POST /inserirDada
-    {
-        "idDispositiu": 1
-        "idUsuari": 1,
-        "nomDispositiu": "dispo_exemple",
-        "llindarMinimReg": 1,
-        "llindarMaximReg": 100
-    }
-    ```
-
-    Respostes possibles:
-    - 200 OK: Indica si s'ha assignat el dispositiu correctament.
-        ```json
-        {
-            "success" = True
-        }
-        ```
-    - 400 Bad Request: Si es proporcionen paràmetres incorrectes.
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
-    - 500 Internal Server Error: 
-        - Error al consultar la base de dades.
-        - Error no controlat.
     """
     try: 
         try: 
@@ -533,33 +393,6 @@ def modificaContrasenya():
     """
     Endpoint de Flask per modificar la contrasenya d'un usuari. Per tal de modificar-la és necessari
     indicar la contrasenya actual i que aquesta sigui correcta.
-
-    Mètode: POST
-    Format de dades esperat: JSON
-
-    Exemple de sol·licitud:
-    ```
-    POST /inserirDada
-    {
-        "idUsuari": 1,
-        contrasenya: "1234",
-        "novaContrasenya": "12345"
-    }
-    ```
-
-    Respostes possibles:
-    - 200 OK: Indica si s'ha modificat la contrasenya correctament
-        ```json
-        {
-            "success" = True
-        }
-        ```
-    - 400 Bad Request: Si es proporcionen paràmetres incorrectes.
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
-    - 500 Internal Server Error: 
-        - Error al consultar la base de dades.
-        - Error no controlat.
     """
     try:
         try: 
@@ -611,33 +444,6 @@ def modificaContrasenya():
 def modificaLLindars():
     """
     Endpoint de Flask per modificar els llindars d'un dispositiu.
-
-    Mètode: POST
-    Format de dades esperat: JSON
-
-    Exemple de sol·licitud:
-    ```
-    POST /inserirDada
-    {
-        "idDispositiu": 1,
-        "llindarMinimReg": 1,
-        "llindarMaximReg": 100
-    }
-    ```
-
-    Respostes possibles:
-    - 200 OK: Indica si s'han modificat els llindars del dispositiu correctament.
-        ```json
-        {
-            "success" = True
-        }
-        ```
-    - 400 Bad Request: Si es proporcionen paràmetres incorrectes.
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
-    - 500 Internal Server Error: 
-        - Error al consultar la base de dades.
-        - Error no controlat.
     """
     try: 
         try: 
@@ -678,46 +484,6 @@ def obtenirUsuaris():
     Endpoint de Flask per obtenir dades de la taula usuaris. Permet obtenir les dades d'un usuari
     en concret o de tots els usuaris. Cal tenir en compte que mai es poden obtenir les contrasenyes
     de forma directa.
-
-    Mètode: GET
-    Paràmetres de la URL:
-    - idUsuari [opcional]: id de l'usuari del qual es volen obtenir les dades.
-    - emailUsuari [opcional]: email de l'usuari del qual es volen obtenir les dades.
-
-    Exemples de sol·licitud
-    - Obtenir totes les dades:
-      ```
-      GET /obtenirUsuaris
-      ```
-    - Obtenir les dades d'un usuari en concret mitjançant el id (té preferència respecte l'email si
-      s'indiquen els dos):
-      ```
-      GET /obtenirUsuaris?idUsuari=1
-      ```
-    - Obtenir les dades d'un usuari en concret mitjançant el email:
-      ```
-      GET /obtenirUsuaris?emailUsuari=usuari@exemple.com
-      ```
-
-    Respostes possibles:
-    - 200 OK: Retorna les dades obtingudes segons els paràmetres proporcionats
-        ```json
-        {
-            "success" = True,
-            "dades": 
-            [
-                {"id": 1, "email": "usuari1@exemple.com", nomUsuari: "nom_usuari1", dataCreacioUsuari: "2023-11-16 12:30:00"},
-                {"id": 2, "email": "usuari2@exemple.com", nomUsuari: "nom_usuari2", dataCreacioUsuari: "2023-11-16 12:30:00"},
-                ...
-            ]
-        }
-        ```
-    - 400 Bad Request: 
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON.
-    - 500 Internal Server Error: 
-        - Error al consultar la base de dades.
-        - Error no controlat.
     """
     try:
         idUsuari = request.args.get('idUsuari')
@@ -768,45 +534,6 @@ def obtenirDispositius():
     - nomDispositiu [opcional]: nom del dispositiu del qual es volen obtenir les dades. Sempre ha d'anar acompanyat
         d'un email d'un usuari, ja que diferents usuaris volen tenir dispositius amb el mateix nom.
     - idDispositiu [opcional]: id del dispositiu del qual es poden obtenir les dades.
-    
-    Exemples de sol·licitud
-    - Obtenir totes les dades:
-      ```
-      GET /obtenirDispositius
-      ```
-    - Obtenir les dades dels dispositius d'un usuari a partir d'un idUsuari:
-      ```
-      GET /obtenirDispositius?idUsuari=1
-      ```
-    - Obtenir les dades d'un dispositiu en concret a partid del id (té preferència respecte l'idUsuari si
-      s'indiquen els dos):
-      ```
-      GET /obtenirDispositius?idDispositiu=id
-      ```
-    - Obtenir les dades d'un dispositiu en concret a partir del id del usuari i el nom de dispositiu:
-      ```
-      GET /obtenirDispositius?idUsuari=1&nomDispositiu=nom_dispositiu
-      ```
-    
-    Respostes possibles:
-    - 200 OK: Retorna les dades obtingudes segons els paràmetres proporcionats
-        ```json
-        {
-            "success" = True,
-            "dades": 
-            [
-                {"id": 1, "idUsuariPropietari": 1, nomDispositiu: "nom_Dispositiu1", llindarMinimReg: 16.9, llindarMaximReg: 87.74},
-                {"id": 2, "idUsuariPropietari": 1, nomDispositiu: "nom_Dispositiu2", llindarMinimReg: 52.23, llindarMaximReg: 60},
-                ...
-            ]
-        }
-        ```
-    - 400 Bad Request: 
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON.
-    - 500 Internal Server Error: 
-        - Error al consultar la base de dades.
-        - Error no controlat.
     """
     try:
         idUsuari = request.args.get('idUsuari')
@@ -867,31 +594,6 @@ def obtenirDispositiusDesassignats():
     """
     Endpoint de Flask per obtenir els dispositius que no estan assignats a cap usuari, és a dir que
     la columna idUsuariPropietari = NULL.
-
-    Mètode: GET
-    
-    Exemples de sol·licitud
-    - Obtenir totes les dades:
-      ```
-      GET /obtenirDispositiusDesassignats
-      ```
-    
-    Respostes possibles:
-    - 200 OK: Retorna les dades
-        ```json
-        {
-            "success" = True,
-            "dades": 
-            [
-                {"id": 1},
-                {"id": 2},
-                ...
-            ]
-        }
-        ```
-    - 500 Internal Server Error: 
-        - Error al consultar la base de dades.
-        - Error no controlat.
     """
     try:
         query = """SELECT * 
@@ -919,57 +621,6 @@ def obtenirDispositiusDesassignats():
 def obtenirDadesDispositius():
     """
     Endpoint de Flask per obtenir dades de la taula dadesDispositius.
-
-    Mètode: GET
-    Paràmetres de la URL:
-    - idUsuari [opcional]: id de l'usuari del qual es volen obtenir les dades dels seus dispositius assignats.
-    - idDispositiu [opcional]: id del dispositiu del qual es volen obtenir les dades.
-    - dataInici [opcional]: data a partir de la qual es volen obtenir dades.
-    - dataFi [opcional]: data fins a la qual es volen obtenir dades.
-    
-    Exemples de sol·licitud
-    - Obtenir totes les dades:
-      ```
-      GET /obtenirDadesDispositius
-      ```
-    - Obtenir totes les dades d'un usuari:
-      ```
-      GET /obtenirDadesDispositius?idUsuari=1
-      ```
-    - Obtenir totes les dades d'un dispositiu a partir del id (té preferència respecte l'idUsuari si
-      s'indiquen els dos):
-      ```
-      GET /obtenirDadesDispositius?idDispositiu=id
-      ```
-    - Obtenir totes les dades d'un usuari indicant data inici i data fi
-      ```
-      GET /obtenirDadesDispositius?idUsuari=1&dataInici=2023-11-16 00:01:00&dataFi=31-12-2023 23:59:00
-      ```
-    - Obtenir totes les dades d'un dispositiu indicant data inici i data fi
-      ```
-      GET /obtenirDadesDispositius?idDispositiu=id&dataInici=01-01-2023 00:01:00&dataFi=31-12-2023 23:59:00
-      ```
-
-    Respostes possibles:
-    - 200 OK: Retorna les dades obtingudes segons els paràmetres proporcionats
-        ```json
-        {
-            "success" = True,
-            "dades": 
-            [
-                {"idDispositiu": 1, "dataHora": "2023-11-16 12:30:00", dadaHum: 45.12, dataTemp: 13.7},
-                {"idDispositiu": 1, "dataHora": "2023-11-16 12:31:00", dadaHum: 15, dadaTemp: 14},
-                {"idDispositiu": 2, "dataHora": "2023-11-16 12:31:00", dadaHum: 7.9, dadaTemp: 2},
-                ...
-            ]
-        }
-        ```
-    - 400 Bad Request: 
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON.
-    - 500 Internal Server Error: 
-        - Error al consultar la base de dades.
-        - Error no controlat.
     """
     try:
         idUsuari = request.args.get('idUsuari')
@@ -1070,57 +721,6 @@ def obtenirDadesDispositius():
 def obtenirCanvisReg():
     """
     Endpoint de Flask per obtenir dades de la taula canvisReg.
-
-    Mètode: GET
-    Paràmetres de la URL:
-    - idUsuari [opcional]: id de l'usuari del qual es volen obtenir les dades dels seus dispositius assignats.
-    - idDispositiu [opcional]: id del dispositiu del qual es volen obtenir les dades.
-    - dataInici [opcional]: data a partir de la qual es volen obtenir dades.
-    - dataFi [opcional]: data fins a la qual es volen obtenir dades.
-    
-    Exemples de sol·licitud
-    - Obtenir totes les dades:
-      ```
-      GET /obtenirCanvisReg
-      ```
-    - Obtenir totes les dades d'un usuari:
-      ```
-      GET /obtenirCanvisReg?idUsuari=1
-      ```
-    - Obtenir totes les dades d'un dispositiu a partir del id (té preferència respecte l'idUsuari si
-      s'indiquen els dos):
-      ```
-      GET /obtenirCanvisReg?idDispositiu=id
-      ```
-    - Obtenir totes les dades d'un usuari indicant data inici i data fi
-      ```
-      GET /obtenirCanvisReg?idUsuari=usuari@1&dataInici=2023-11-16 00:01:00&dataFi=31-12-2023 23:59:00
-      ```
-    - Obtenir totes les dades d'un dispositiu indicant data inici i data fi
-      ```
-      GET /obtenirCanvisReg?idDispositiu=id&dataInici=01-01-2023 00:01:00&dataFi=31-12-2023 23:59:00
-      ```
-
-    Respostes possibles:
-    - 200 OK: Retorna les dades obtingudes segons els paràmetres proporcionats
-        ```json
-        {
-            "success" = True,
-            "dades": 
-            [
-                {"idDispositiu": 1, "dataHora": "2023-11-16 12:30:00", "estatReg": 0},
-                {"idDispositiu": 1, "dataHora": "2023-11-16 12:31:00", "estatReg": 1},
-                {"idDispositiu": 2, "dataHora": "2023-11-16 12:31:00", "estatReg": 0},
-                ...
-            ]
-        }
-        ```
-    - 400 Bad Request: 
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON.
-    - 500 Internal Server Error: 
-        - Error al consultar la base de dades.
-        - Error no controlat.
     """
     try:
         idUsuari = request.args.get('idUsuari')
@@ -1220,34 +820,6 @@ def obtenirCanvisReg():
 def obtenirUltimReg():
     """
     Endpoint de Flask per obtenir les dades del últim reg d'un dispositiu
-
-    Mètode: GET
-    Paràmetres de la URL:
-    - idDispositiu [obligatori]: id del dispositiu del qual es volen obtenir les dades.
-    
-    Exemples de sol·licitud
-    - Obtenir les dades d'un dispositiu a partir del id:
-      ```
-      GET /obtenirUltimReg?idDispositiu=id
-      ```
-
-    Respostes possibles:
-    - 200 OK: Retorna les dades obtingudes segons els paràmetres proporcionats
-        ```json
-        {
-            "success" = True,
-            "dades": 
-            [
-                {"dataHoraInici": "2023-11-16 12:30:00"/ "", "dataHoraFi": "2023-11-16 12:45:00" / ""}
-            ]
-        }
-        ```
-    - 400 Bad Request: 
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON.
-    - 500 Internal Server Error: 
-        - Error al consultar la base de dades.
-        - Error no controlat.
     """
     try:
         idDispositiu = request.args.get('idDispositiu')
@@ -1313,51 +885,6 @@ def obtenirUltimReg():
 def obtenirUltimaDadaDispositiu():
     """
     Endpoint de Flask per obtenir les últimes dades de la taula dadesDispositius.
-
-    Mètode: GET
-    Paràmetres de la URL:
-    - idDispositiu [obligatori]: id del dispositiu del qual es vol obtenir la dada.
-
-    - Obtenir la última dada d'un dispositiu en concret:
-      ```
-      GET /obtenirUltimaDadaDispositiu?idDispositiu=1
-      ```
-    - Obtenir la última dada de tots els dispositius d'un usuari:
-      ```
-      GET /obtenirUltimaDadaDispositiu?idUsuari=1
-      ```
-
-     Respostes possibles:
-    - 200 OK: Retorna les dades obtingudes segons els paràmetres proporcionats
-        ```json
-        {
-            "success" = True,
-            "dades": 
-            [
-                {
-                    "idDispositiu": 1, 
-                    "nomDispositiu": "nom_dispositiu",
-                    "dataHora": "2023-11-16 12:31:00", 
-                    dadaHum: 15, 
-                    dadaTemp: 14
-                },
-                {
-                    "idDispositiu": 2, 
-                    "nomDispositiu": "nom_dispositiu2",
-                    "dataHora": "2023-11-16 12:35:00", 
-                    dadaHum: 57.8, 
-                    dadaTemp: 40.3
-                },
-                ...
-            ]
-        }
-        ```
-    - 400 Bad Request: 
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON.
-    - 500 Internal Server Error: 
-        - Error al consultar la base de dades.
-        - Error no controlat.
     """
     try:
         idDispositiu = request.args.get('idDispositiu')
