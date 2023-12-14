@@ -38,14 +38,14 @@ export function registerRequest(email:string, nomUsuari: string, contrasenya: st
 
 
 
-export function changePwdRequest(usernameId:string, oldPassword:string, newPassword: string): Promise<ILogged> {
+export function changePwdRequest(idUsuari:string, contrasenya:string, novaContrasenya: string): Promise<ILogged> {
   //TO-DO: Assegurar destí de la request al servidor
-  return fetch(`${ENDPOINT}/canviarContrassenya`, {
+  return fetch(`${ENDPOINT}/modificaContrasenya`, {
       method: 'POST',
       headers: {
           "Content-type": "application/json"
       },
-      body: JSON.stringify({usernameId, newPassword})
+      body: JSON.stringify({idUsuari, contrasenya, novaContrasenya})
   }).then(res => {
       if (!res.ok) throw new Error('Response is not OK')
       return res.json()
@@ -83,7 +83,7 @@ export function getUserDevices (usernameId: string): Promise<IUserDevices> {
 }
 
 export function getAvailableDevices (): Promise<IUserDevices> {
-  return fetch(`${ENDPOINT}/ENCARAPERDECIDIR/`, {
+  return fetch(`${ENDPOINT}/obtenirDispositiusDesassignats/`, {
       method: 'GET',
       headers: {
           "Content-type": "application/json"

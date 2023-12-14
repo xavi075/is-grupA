@@ -14,6 +14,7 @@ const ChangePassword =  () => {
   const { usernameId } = useUser();
   const [ChangedPwd, setChangedPwd] = useState<IChangedPwd>()
   const [ChangePwd, setChangePwd] = useState(false);
+  const [IncorrectPwd, setIncorrectPwd] = useState(false);
 
   const toggleChangePwd = () => {
     setChangePwd(!ChangePwd);
@@ -23,17 +24,26 @@ const ChangePassword =  () => {
   const handleChangePwd = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (usernameId != null){
-      changePwdRequest(usernameId, currentPwd, newPwd)
+      if (currentPwd != "" && newPwd != ""){
+        changePwdRequest(usernameId, currentPwd, newPwd)
         .then((response) => {
-          // TO-DO: Co provacio success
-          setChangedPwd(response)
+          if (response.success){
+            setChangedPwd(response) //PRESCINDIBLE
+            setChangePwd(false)
+          }
         })
         .catch((error) => {
-          console.error('Error when obtaining branches (Username or password incorrect): ', error);
+          setIncorrectPwd(true)
+          console.error('Incorrect password: ', error); //DEMANAR FERRAN GESTIÓ D'ERRORS
         });
-      if (ChangedPwd){
-        toggleChangePwd()
+
+        setIncorrectPwd(false);
+
+        
+      } else {
+        setIncorrectPwd(true);
       }
+      
     }
 
   };
@@ -45,6 +55,7 @@ const ChangePassword =  () => {
         <div className="form-container password-container">
           <Form className="custom-form" onSubmit={handleChangePwd}>
           <h3>Canvia la contrasenya</h3>
+          {IncorrectPwd && <span className='incorrect-message'>Contrasenyes buides o incorrectes</span>}
           <Form.Group controlId="formBasicUsername">
             <Form.Label className="custom-label"><FontAwesomeIcon icon="key" style={{ color: "#007ABF" }} /> Contrasenya actual </Form.Label>
             <Form.Control className="custom-input" type="password" placeholder="Contrassenya actual" value={currentPwd} onChange={(e) => setCurrentPwd(e.target.value)} />

@@ -74,12 +74,14 @@ const Devices =  () => {
       <h2>Dispositius disponibles</h2>
       {/* TO-DO: Dissenyar gestió de nous devices */}
       <table className='table-info'>
-         <tbody>
-           <tr>
-             <td>Hora</td>
-             <td><Link className="logout-link" to="#" onClick={addNewDevice}>Afegeix</Link></td>
-             {/* <td>{dispositiu.dataHora.toDateString()}</td> */}
-           </tr>
+        <tbody>
+        {AvailableDevices?.dades.map((dispositiu) => (
+          <tr>
+          <td>{dispositiu.id}</td>
+          <td><Link className="logout-link" to="#" onClick={addNewDevice}>Afegeix</Link></td>
+          {/* <td>{dispositiu.dataHora.toDateString()}</td> */}
+        </tr>
+        ))}
            <tr>
              <td>Temperatura</td>
              <td><Link className="logout-link" to="#" onClick={addNewDevice}>Afegeix</Link></td>
