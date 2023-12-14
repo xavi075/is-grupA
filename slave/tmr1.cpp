@@ -37,3 +37,8 @@ void setup_tmr0(uint16_t time, tmr0_callback_t f) {
     OCR0A = 248; 
     TIMSK0 = _BV(OCIE0A); 
 }
+
+void stop_tmr0() {
+    // Parar el timer
+    TCCR0B = 0; // mode CTC i prescaler 64
+}
