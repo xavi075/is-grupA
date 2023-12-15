@@ -24,7 +24,7 @@ const ChangePassword =  () => {
   const handleChangePwd = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (usernameId != null){
-      if (currentPwd != "" && newPwd != ""){
+      if (currentPwd !== "" && newPwd !== ""){
         changePwdRequest(usernameId, currentPwd, newPwd)
         .then((response) => {
           if (response.success){

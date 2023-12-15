@@ -41,11 +41,12 @@
 
   .navbar {
     padding: 10px;
-    /* width: 100vw; */
+    /* width: 130vw; */
   }
 
   .navbar-brand {
     font-size: 24px;
+
   }
 
   .nav-link {

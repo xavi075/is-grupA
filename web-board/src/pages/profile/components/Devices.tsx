@@ -20,7 +20,7 @@ const Devices =  () => {
     // TO-DO: Petició Nou dispositiu
   }
 
-  const DeleteDevice = () => {
+  const DeleteDevice = (dispositiuId: number) => {
     // TO-DO: Afegeix nou dispositiu
   }
 
@@ -48,26 +48,24 @@ const Devices =  () => {
   return(
     <div className="account-box">
       <h2>Els meus dispositius</h2>
-      <table className='table-info'>
-        <thead>
-          <tr>
-            <th>Nom del dispositiu</th>
-            <th>Llindar mínim</th>
-            <th>Llindar màxim</th>
-            <th>Accions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {UserDevices?.dades.map((dispositiu) => (
-            <tr key={`grup-${dispositiu.nomDispositiu}`}>
-              <td key={`${dispositiu.nomDispositiu}`}>{dispositiu.nomDispositiu}</td>
-              <td key={`${dispositiu.llindarMinimReg}`}>{dispositiu.llindarMinimReg}</td>
-              <td key={`${dispositiu.llindarMaximReg}`}>{dispositiu.llindarMaximReg}</td>
-              <td key={`accions-${dispositiu}`}><Link className="logout-link" to="#" onClick={DeleteDevice}>Elimina'l</Link></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="device-list">
+        {UserDevices?.dades.map((dispositiu) => (
+          <div key={`grup-${dispositiu.nomDispositiu}`} className="device-item">
+            <div className="device-details">
+              <strong className='dev-name'>{dispositiu.nomDispositiu}</strong> 
+              <br />
+              <strong>Llindar mínim:</strong> {dispositiu.llindarMinimReg}%
+              <br />
+              <strong>Llindar màxim:</strong> {dispositiu.llindarMaximReg}%
+            </div>
+            <div className="device-actions">
+              <Link className="logout-link" to="#" onClick={() => DeleteDevice(dispositiu.id)}>
+                Elimina'l
+              </Link>
+            </div>
+          </div>
+        ))}
+  </div>
       {!NewDevice ? <Link className="add-device-link" to="#" onClick={toggleNewDevice}>Afegeix un nou dispositiu </Link>
       :
       <div className="available-devices-box"> 
