@@ -1,5 +1,5 @@
 .table-container{
-  width: 300px;
+  width: 400px;
   margin: 0 20px 20px 0;
   /* border: 1px solid #ccc; */
   border-radius: 8px;
@@ -28,5 +28,11 @@ td:last-child {
 
 td + td {
   border-left: 1px solid #ddd;
+}
+
+@media (max-width: 768px){
+  .table-container{
+    width: 100%;
+  }
 }
   
