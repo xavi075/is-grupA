@@ -125,34 +125,6 @@ def inserirUsuari():
     s'encarrega d'aplicar-lo. Per a un correcte funcionament del sistema, serà necessari utilitzar
     un protocol https. Al inserir un usuari, s'insereix a la base de dades la data utf de creació
     de l'usuari.
-
-    Mètode: POST
-    Format de dades esperat: JSON
-
-    Exemple de sol·licitud:
-    ```
-    POST /inserirUsuari
-    {
-        "email": "usuari@exemple.com",
-        "nomUsuari": "nom_usuari",
-        "contrasenya": "pwd"
-    }
-    ```
-
-    Respostes possibles:
-    - 200 OK: Dades insertades correctament. Especifica el id que se li ha assignat a l'usuari insertat.
-        ```json
-        {
-            "success" = True,
-            "idUsuariInsertat": id
-        }   
-        ```
-    - 400 Bad Request:
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
-    - 500 Internal Sever Error: 
-        - Error al inserir les dades a la base de dades.
-        - Error no controlat.
     """
     try: 
         try: 
@@ -399,6 +371,57 @@ def assignaDispositiuUsuari():
                         db.començaTransaccio()
                         try:
                             db.update('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu, 'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax}, "id = " + str(idDispositiu))
+
+                        except Exception as e:
+                            db.rollback()
+                            return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
+                        
+                        else:
+                            db.commit()
+                            return jsonify({'success': True})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+@app.route('/desassignaDispositiu', methods = ['POST'])
+def desassignaDispositiu():
+    """
+    Endpoint de Flask per desassignar un dispositiu a un usuari. Només permet desassignar-lo si el 
+    dispositiu està assignat, és a dir que està assignat a un altra usuari.
+    """
+    try: 
+        try: 
+            dades_json = request.json
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
+
+        idDispositiu = dades_json.get('idDispositiu')
+
+        if idDispositiu is None:
+            return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
+        
+        else:
+            try:
+                query = """SELECT idUsuariPropietari
+                        FROM dispositius
+                        WHERE id = %s"""
+                params = (idDispositiu, )
+                dades = db.executaQuery(query, params)
+            
+            except Exception as e:
+                return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+            
+            else:
+                if len(dades) == 0:
+                    return jsonify({'success': False, 'error': f"No existeix cap dispositiu amb l'identificador especificat"}), 400
+                else:
+                    if dades[0][0] == None:
+                        return jsonify({'success': False, 'error': f"El dispositiu ja està desassignat"}), 400
+                    
+                    else:
+                        db.començaTransaccio()
+                        try:
+                            db.update('dispositius', {'idUsuariPropietari': None, 'nomDispositiu': None, 'nivellMinimReg': None, 'nivellMaximReg': None}, "id = " + str(idDispositiu))
 
                         except Exception as e:
                             db.rollback()
