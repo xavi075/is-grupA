@@ -5,7 +5,7 @@
     padding: 20px;
   }
   
-  .rango-input {
+  .rang-input {
     margin-bottom: 20px;
   }
   
@@ -13,8 +13,8 @@
     margin-bottom: 10px;
     font-weight: bold;
   }
-  
-  input {
+
+  .rang-input input {
     width: 300px;
     height: 20px;
     appearance: none; /* Elimina el estilo predeterminado del navegador */
@@ -24,10 +24,12 @@
     transition: background 0.3s ease; /* Efecto de transición en hover */
   }
   
-  input:hover {
+  .rang-input input:hover {
     background: #ccc; /* Cambio de color al pasar el ratón */
   }
   
+  
+
   input::-webkit-slider-thumb {
     appearance: none; /* Elimina el estilo predeterminado del navegador */
     width: 20px;

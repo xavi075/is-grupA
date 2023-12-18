@@ -9,7 +9,7 @@ const Account =  () => {
   const { setUserNameId, setLoggedIn } = useUser();
 
   const logout = () => {
-    window.sessionStorage.removeItem('username')
+    window.sessionStorage.removeItem('usernameId')
     setUserNameId(null)
     setLoggedIn(false)
   }

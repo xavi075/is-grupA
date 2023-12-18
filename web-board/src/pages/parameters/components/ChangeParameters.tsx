@@ -58,14 +58,14 @@ useEffect(() => {
           {Device?.dades.map((dispositiu) => (
               <div key={`${dispositiu.nomDispositiu}`}>
                   <p key={`${dispositiu.id}`}>Dispositiu {dispositiu.nomDispositiu}</p>
-                  <div className="rango-input">
+                  <div className="rang-input">
         <label htmlFor="LlindarInferior">Llindar Inferior: {LlindarInferior}</label>
         <br />
         <input type="range" id="LlindarInferior" min={0} max={100} value={LlindarInferior} onChange={handleLlindarInferiorChange}
         />
       </div>
 
-      <div className="rango-input">
+      <div className="rang-input">
         <label htmlFor="LlindarSuperior">Llindar Superior: {LlindarSuperior}</label>
         <br />
         <input type="range" id="LlindarSuperior" min={0} max={100} value={LlindarSuperior} onChange={handleLlindarSuperiorChange}/>
