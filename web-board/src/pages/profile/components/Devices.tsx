@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useUser } from '../../../context/UserContext';
 import { IUserDevices } from '../../../utils/interfaces';
-import { getUserDevices, getAvailableDevices} from '../../../utils/api';
+import { getUserDevices, getAvailableDevices, assignDeviceUser} from '../../../utils/api';
 import { Link } from "react-router-dom";
 import './Devices.css'
 
@@ -16,8 +16,8 @@ const Devices =  () => {
     setNewDevice(!NewDevice);
   };
 
-  const addNewDevice = () => {
-    // TO-DO: Petició Nou dispositiu
+  const addNewDevice = (deviceId: number, userId: string| null) => {
+    assignDeviceUser(deviceId, userId)
   }
 
   const DeleteDevice = (dispositiuId: number) => {
@@ -28,6 +28,7 @@ const Devices =  () => {
     if (usernameId != null){
       getUserDevices(usernameId)
         .then((response) => {
+          console.log(response)
           setUserDevices(response)
         })
         .catch((error) => {
@@ -43,7 +44,7 @@ const Devices =  () => {
         });
       }
     }
-  }, [])
+  }, [NewDevice, usernameId])
 
   return(
     <div className="account-box">
@@ -76,20 +77,10 @@ const Devices =  () => {
         {AvailableDevices?.dades.map((dispositiu) => (
           <tr>
           <td>{dispositiu.id}</td>
-          <td><Link className="logout-link" to="#" onClick={addNewDevice}>Afegeix</Link></td>
+          <td><Link className="logout-link" to="#" onClick={() => addNewDevice(dispositiu.id, usernameId)}>Afegeix</Link></td>
           {/* <td>{dispositiu.dataHora.toDateString()}</td> */}
         </tr>
         ))}
-           <tr>
-             <td>Temperatura</td>
-             <td><Link className="logout-link" to="#" onClick={addNewDevice}>Afegeix</Link></td>
-             {/* <td>{dispositiu.dadaTemp}</td> */}
-           </tr>
-           <tr>
-             <td>Humitat</td>
-             <td><Link className="logout-link" to="#" onClick={addNewDevice}>Afegeix</Link></td>
-             {/* <td>{dispositiu.dadaHum}</td> */}
-           </tr>
          </tbody>
          </table>
       <Link className="logout-link" to="#" onClick={toggleNewDevice}>Cancel·la </Link>

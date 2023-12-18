@@ -1,0 +1,39 @@
+.change-parameters-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+  }
+  
+  .rango-input {
+    margin-bottom: 20px;
+  }
+  
+  label {
+    margin-bottom: 10px;
+    font-weight: bold;
+  }
+  
+  input {
+    width: 300px;
+    height: 20px;
+    appearance: none; /* Elimina el estilo predeterminado del navegador */
+    background: #ddd; /* Fondo de la barra */
+    border-radius: 10px; /* Bordes redondeados */
+    outline: none; /* Elimina el contorno en enfoque */
+    transition: background 0.3s ease; /* Efecto de transición en hover */
+  }
+  
+  input:hover {
+    background: #ccc; /* Cambio de color al pasar el ratón */
+  }
+  
+  input::-webkit-slider-thumb {
+    appearance: none; /* Elimina el estilo predeterminado del navegador */
+    width: 20px;
+    height: 20px;
+    background: #007bff; /* Color del pulgar */
+    border-radius: 50%; /* Bordes redondeados */
+    cursor: pointer; /* Cambia el cursor al pasar por encima */
+  }
+  

@@ -95,3 +95,47 @@ export function getAvailableDevices (): Promise<IUserDevices> {
       return res 
   })
 }
+
+export function getDeviceInfo (deviceId: number): Promise<IUserDevices> {
+    return fetch(`${ENDPOINT}/obtenirDispositius?idDispositiu=${deviceId}`, {
+        method: 'GET',
+        headers: {
+            "Content-type": "application/json"
+        },
+    }).then(res => {
+        if (!res.ok) throw new Error('Response is not OK')
+        return res.json()
+    }).then( res => {
+        return res 
+    })
+}
+
+export function assignDeviceUser (deviceId: number, userId: string | null): Promise<IUserDevices> {
+  return fetch(`${ENDPOINT}/assignaDIspositiuUsuari/`, {
+      method: 'POST',
+      headers: {
+          "Content-type": "application/json"
+      },
+      body: JSON.stringify({deviceId, userId})
+  }).then(res => {
+      if (!res.ok) throw new Error('Response is not OK')
+      return res.json()
+  }).then( res => {
+      return res 
+  })
+}
+
+  export function insertThreshold (idDispositiu: number, llindarMinimReg: number, llindarMaximReg: number): Promise<IUserDevices> {
+    return fetch(`${ENDPOINT}/modificaLlindars`, {
+        method: 'POST',
+        headers: {
+            "Content-type": "application/json"
+        },
+        body: JSON.stringify({idDispositiu, llindarMinimReg, llindarMaximReg})
+    }).then(res => {
+        if (!res.ok) throw new Error('Response is not OK')
+        return res.json()
+    }).then( res => {
+        return res 
+    })
+  }
