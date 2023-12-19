@@ -36,6 +36,8 @@ const ChangeParameters =  (props: {deviceId: number | undefined}) => {
     console.log('Llindar Superior:', LlindarSuperior);
     if (LlindarInferior && LlindarSuperior && props.deviceId != null){
       insertThreshold(props.deviceId, LlindarInferior, LlindarSuperior)
+      //TO-DO: Manejar resposta
+      setContentChanged(true)
     }
   };
 
@@ -46,6 +48,7 @@ useEffect(() => {
         setDevice(response)
         setLlindarInferior(response.dades[0].llindarMinimReg)
         setLlindarSuperior(response.dades[0].llindarMaximReg)
+        setContentChanged(false)
     })
     .catch((error) => {
         console.error('Error when user devices: ', error);
@@ -54,26 +57,32 @@ useEffect(() => {
   }, [props.deviceId, ContentChanged])
 
   return (
-      <div className='change-parameters-container'>
-          {Device?.dades.map((dispositiu) => (
-              <div key={`${dispositiu.nomDispositiu}`}>
-                  <p key={`${dispositiu.id}`}>Dispositiu {dispositiu.nomDispositiu}</p>
-                  <div className="rang-input">
-        <label htmlFor="LlindarInferior">Llindar Inferior: {LlindarInferior}</label>
-        <br />
-        <input type="range" id="LlindarInferior" min={0} max={100} value={LlindarInferior} onChange={handleLlindarInferiorChange}
-        />
-      </div>
-
-      <div className="rang-input">
-        <label htmlFor="LlindarSuperior">Llindar Superior: {LlindarSuperior}</label>
-        <br />
-        <input type="range" id="LlindarSuperior" min={0} max={100} value={LlindarSuperior} onChange={handleLlindarSuperiorChange}/>
-      </div>
-                <Link className="edit-link" to="#" onClick={handleGuardar}>Guardar</Link>
-            </div>
-        ))}
+    <>
+    <div className='current-parameters'>
+      <h3>Valors dels paràmetres actuals</h3>
+      <p><FontAwesomeIcon icon="droplet" style={{ color: "#007ABF" }} /> Mínima humitat per regar: {Device?.dades[0].llindarMinimReg}%</p>
+      <p><FontAwesomeIcon icon="stop" style={{ color: "#007ABF" }} /> Humitat per aturar el reg: {Device?.dades[0].llindarMaximReg}%</p>      
     </div>
+    <div className='change-parameters-container'>
+      {Device?.dades.map((dispositiu) => (
+        <div key={`${dispositiu.nomDispositiu}`}>
+          <p key={`${dispositiu.id}`}>Dispositiu {dispositiu.nomDispositiu}</p>
+            <div className="rang-input">
+              <label htmlFor="LlindarInferior">Llindar Inferior: {LlindarInferior}%</label>
+              <br />
+              <input type="range" id="LlindarInferior" min={0} max={100} value={LlindarInferior} onChange={handleLlindarInferiorChange}/>
+            </div>
+
+            <div className="rang-input">
+              <label htmlFor="LlindarSuperior">Llindar Superior: {LlindarSuperior}%</label>
+              <br />
+              <input type="range" id="LlindarSuperior" min={0} max={100} value={LlindarSuperior} onChange={handleLlindarSuperiorChange}/>
+            </div>
+            <Link className="edit-link" to="#" onClick={handleGuardar}>Guardar</Link>
+        </div>
+      ))}
+    </div>
+    </>
   )
 }
 

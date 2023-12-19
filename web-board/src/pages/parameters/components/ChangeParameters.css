@@ -1,41 +1,44 @@
 .change-parameters-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-  }
-  
-  .rang-input {
-    margin-bottom: 20px;
-  }
-  
-  label {
-    margin-bottom: 10px;
-    font-weight: bold;
-  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
 
-  .rang-input input {
-    width: 300px;
-    height: 20px;
-    appearance: none; /* Elimina el estilo predeterminado del navegador */
-    background: #ddd; /* Fondo de la barra */
-    border-radius: 10px; /* Bordes redondeados */
-    outline: none; /* Elimina el contorno en enfoque */
-    transition: background 0.3s ease; /* Efecto de transición en hover */
-  }
-  
-  .rang-input input:hover {
-    background: #ccc; /* Cambio de color al pasar el ratón */
-  }
-  
-  
+.rang-input {
+  margin-bottom: 20px;
+}
 
-  input::-webkit-slider-thumb {
-    appearance: none; /* Elimina el estilo predeterminado del navegador */
-    width: 20px;
-    height: 20px;
-    background: #007bff; /* Color del pulgar */
-    border-radius: 50%; /* Bordes redondeados */
-    cursor: pointer; /* Cambia el cursor al pasar por encima */
-  }
+label {
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.rang-input input {
+  /* width: 300px; */
+  width: 70vw;
+  height: 20px;
+  appearance: none; 
+  background: #ddd; 
+  border-radius: 10px; 
+  outline: none; 
+  transition: background 0.3s ease;
+}
+
+.rang-input input:hover {
+  background: #ccc; 
+}
+
+
+
+input::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #007bff;
+  border-radius: 50%; 
+  cursor: pointer; 
+}
+
+
   

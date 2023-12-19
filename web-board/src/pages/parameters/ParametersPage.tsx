@@ -7,6 +7,13 @@ import ChangeParameters from "./components/ChangeParameters"
 export function ParametersPage() {
     const { usernameId } = useUser();
     const [UserDevices, setUserDevices] = useState<IUserDevices>();
+    const [selectedDevice, setSelectedDevice] = useState('');
+
+    const handleDeviceChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+      const selectedValue = event.target.value;
+      setSelectedDevice(selectedValue);
+    };
+
 
 
     useEffect(() => {
@@ -23,15 +30,30 @@ export function ParametersPage() {
 
     return (
         <div>
-            <h2>Parameters page</h2>
+            <h2>Paràmetres dels dispositius</h2>
             {/* {UserDevices?.dades.map((dispositiu) => (
             <div key={`${dispositiu.nomDispositiu}`}>
               <ChangeParameters key={dispositiu.id} deviceId={dispositiu.id}/>
             </div>
         ))} */}
+      <div>
+        <label htmlFor="dispositivo">Selecciona un dispositiu: </label>
+        <select id="dispositivo" value={selectedDevice} onChange={handleDeviceChange}>
+          <option value="">-- Selecciona un dispositiu --</option>
+          {UserDevices?.dades.map((dispositiu) => (
+            <option key={dispositiu.id} value={dispositiu.id}>
+              {dispositiu.nomDispositiu}
+            </option>
+          ))}
+        </select>
+
+        {/* <p>Dispositiu seleccionat: {selectedDevice}</p> */}
+        {selectedDevice &&<ChangeParameters key={selectedDevice} deviceId={parseInt(selectedDevice)}/>}
+
+
+    </div>
 
         <div key={`${UserDevices?.dades[0].nomDispositiu}`}>
-        <ChangeParameters key={UserDevices?.dades[0].id} deviceId={UserDevices?.dades[0].id}/>
         </div>
 
             

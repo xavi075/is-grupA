@@ -103,6 +103,7 @@ export function getDeviceInfo (deviceId: number): Promise<IUserDevices> {
             "Content-type": "application/json"
         },
     }).then(res => {
+        console.log(res)
         if (!res.ok) throw new Error('Response is not OK')
         return res.json()
     }).then( res => {
