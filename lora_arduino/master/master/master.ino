@@ -7,7 +7,7 @@ void setup() {
 
   Serial.println("LoRa Receiver");
 
-  LoRa.setPins(10,5,2);
+  //LoRa.setPins(10,5,2); //Per sensor
   while(!LoRa.begin(866E6));
   Serial.println("Starting LoRa!");
 
@@ -21,6 +21,14 @@ void setup() {
 }
 
 void loop() {
+  
+}
+
+void sendMessage(String outgoing){
+  // send packet
+  LoRa.beginPacket();
+  LoRa.print(outgoing);
+  LoRa.endPacket();
 }
 
 void onReceive(int packetSize){
@@ -39,6 +47,10 @@ void onReceive(int packetSize){
     }
     if(missatge[0] == 'h' && missatge[1] == 'e' && missatge[2] == 'l' && missatge[3] == 'l' && missatge[4] == 'o'){
       digitalWrite(4,LOW);
+      sendMessage("Bye \n");
+      Serial.println("Bye");
     }
+
+    LoRa.receive();
   }
 }
