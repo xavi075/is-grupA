@@ -50,7 +50,30 @@ void loop(void){
        if (Serial.available() > 0) {
         
         char valor = Serial.read(); 
-        if (valor == 'N'){
+        delay(10);
+        char valor1 = Serial.read(); 
+        //delay(10);
+        char valor2 = Serial.read(); 
+        //delay(10);
+        //printf("%c\n", valor);
+        //printf("%c\n", valor1);
+        //printf("%c\n", valor2);
+
+        if(valor == 'N'){
+          
+          uint8_t missatge[6];
+          missatge[0] = 'G';
+          missatge[1] = '3';
+          missatge[2] = ':';
+          missatge[3] = 'N';
+          missatge[4] = 'O';
+          missatge[5] = '\0';
+          lora_putd(missatge, 6);
+          digitalWrite(7,HIGH);
+            //delay(100);
+            
+        }
+        /*if (valor == 'N'){
           delay(10);
           valor = Serial.read(); 
          
@@ -109,7 +132,7 @@ void loop(void){
             digitalWrite(8,HIGH);
             flag = true;
             //}
-          }
+          }*/
         }
         
         //String inputString = Serial.readStringUntil('\n');
@@ -128,9 +151,9 @@ void loop(void){
         //  delay(1000);
         //  flag = true;
         //}
-      }
+      //}
     } 
- }      
+ }
 
 void parse_lora( uint8_t * buf, uint8_t len, uint8_t status ) {
   // Serial.println("Re parcero bro");
