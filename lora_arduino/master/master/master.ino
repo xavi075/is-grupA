@@ -5,7 +5,7 @@ void setup() {
   Serial.begin(9600);
   while (!Serial);
 
-  Serial.println("LoRa Receiver");
+  Serial.println("LoRa Master");
 
   //LoRa.setPins(10,5,2); //Per sensor
   while(!LoRa.begin(866E6));
@@ -32,25 +32,28 @@ void sendMessage(String outgoing){
 }
 
 void onReceive(int packetSize){
-  if (packetSize) {
-    // received a packet
-    Serial.print("Received packet '");
+  Serial.print("On receive --> ");
+  if (packetSize == 0) return;
+  // received a packet
+  Serial.print("Received packet '");
 
-    char missatge[20];
-    int i = 0;
-    // read packet
-    while (i < packetSize) {
-      char caracter = (char)LoRa.read();
-      missatge[i] = caracter;
-      i++;      
-      Serial.print(caracter);
-    }
-    if(missatge[0] == 'h' && missatge[1] == 'e' && missatge[2] == 'l' && missatge[3] == 'l' && missatge[4] == 'o'){
-      digitalWrite(4,LOW);
-      sendMessage("Bye \n");
-      Serial.println("Bye");
-    }
-
-    LoRa.receive();
+  //char missatge[20];
+  //int i = 0;
+  String missatge = "";
+  // read packet
+  while (LoRa.available()) {
+    char caracter = (char)LoRa.read();
+    missatge += caracter;      
+    Serial.print(caracter);
   }
+  //if(missatge[0] == 'h' && missatge[1] == 'e' && missatge[2] == 'l' && missatge[3] == 'l' && missatge[4] == 'o'){
+  //  digitalWrite(4,LOW);
+  //  sendMessage("Bye \n");
+  //  Serial.println("Bye");
+  //}
+  if (missatge == "hello"){
+    sendMessage("Bye\n");
+    Serial.println("Bye");
+  }
+  LoRa.receive();
 }
