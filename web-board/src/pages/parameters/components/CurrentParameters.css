@@ -1,5 +1,5 @@
 
-.edit-link {
+.edit-link-home {
     display: inline-block;
     padding: 10px 20px;
     background-color: #007ABF;
@@ -10,7 +10,7 @@
     transition: background-color 0.3s, color 0.3s, border-color 0.3s;
   }
   
-  .edit-link:hover {
+  .edit-link-home:hover {
     background-color: #ffffff;
     border-color: #007ABF;
     color: #007ABF;

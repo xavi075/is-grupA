@@ -59,14 +59,15 @@ useEffect(() => {
   return (
     <>
     <div className='current-parameters'>
-      <h3>Valors dels paràmetres actuals</h3>
+      <h3>Dispositiu {Device?.dades[0].nomDispositiu}</h3>
+      <h3>Paràmetres actuals</h3>
       <p><FontAwesomeIcon icon="droplet" style={{ color: "#007ABF" }} /> Mínima humitat per regar: {Device?.dades[0].llindarMinimReg}%</p>
       <p><FontAwesomeIcon icon="stop" style={{ color: "#007ABF" }} /> Humitat per aturar el reg: {Device?.dades[0].llindarMaximReg}%</p>      
     </div>
     <div className='change-parameters-container'>
+    <h3>Canvia els llindars d'humitat</h3>
       {Device?.dades.map((dispositiu) => (
         <div key={`${dispositiu.nomDispositiu}`}>
-          <p key={`${dispositiu.id}`}>Dispositiu {dispositiu.nomDispositiu}</p>
             <div className="rang-input">
               <label htmlFor="LlindarInferior">Llindar Inferior: {LlindarInferior}%</label>
               <br />

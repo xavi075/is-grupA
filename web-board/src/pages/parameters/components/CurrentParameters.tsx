@@ -8,11 +8,11 @@ const CurrentParameters = () => {
 
   // TO-DO: mostrar dades de l'API
   return (
-    <div className='current-parameters'>
+    <div>
       <h2>Valors dels paràmetres actuals</h2>
       <p><FontAwesomeIcon icon="droplet" style={{ color: "#007ABF" }} /> Mínima humitat per regar: %</p>
       <p><FontAwesomeIcon icon="stop" style={{ color: "#007ABF" }} /> Humitat per aturar el reg: %</p>
-      <Link className="edit-link" to="/parameters">Editar</Link>
+      <Link className="edit-link-home" to="/parameters">Editar</Link>
       
     </div>
   );

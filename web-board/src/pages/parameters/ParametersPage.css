@@ -1,0 +1,25 @@
+.page-box {
+  box-sizing: border-box;
+
+  width: 95%;
+  /* min-width: 400px; */
+  margin: auto;
+  margin-top: 10px;
+  padding: 20px;
+  padding-bottom: 60px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+}
+
+.page-box h2{
+  color: #007ABF;
+}
+
+.select-device-box {
+  padding: 10px;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
