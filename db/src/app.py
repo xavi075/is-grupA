@@ -28,7 +28,7 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app, resources = {"r/*": {"origins": "http://localhost:3000"}})
 # connexió a la base de dades
-db = mariaDBConn('localhost', 'ferran', '3007', 'integracioSistemes')
+db = mariaDBConn('localhost', 'arnau', 'isgrupA', 'integracioSistemes')
 db.conecta()
 
 # llista en la qual es guarden els llindars que s'han modificat. S'emmagatzemen en forma de diccionaris
@@ -938,6 +938,81 @@ def obtenirUltimReg():
     else:
         dades_formatejades = [{"dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg}]
         return jsonify({'success': True, 'dades': dades_formatejades})
+    
+@app.route('/obtenirUltimRegUsuari', methods = ['GET'])
+def obtenirUltimRegUsuari():
+    """
+    Endpoint de Flask per obtenir les dades del últim reg de tots els dispositiu d'un usuari
+    """
+    try:
+        # idDispositiu = request.args.get('idDispositiu')
+        idUsuari = request.args.get('idUsuari')
+
+        if idUsuari is None:
+            return jsonify({'success': False, 'error': f"'idUsuari' no especificat"}), 400
+
+        try: 
+            params_lastRegUsuari = (idUsuari, )
+            query_lastRegUsuari = """SELECT canv.idDispositiu, canv.estatReg, canv.dataHora
+                            FROM (SELECT idDispositiu, estatReg, MAX(dataHora) AS dataHora 
+                                FROM canvisReg 
+                                WHERE estatReg = 1 
+                                GROUP BY idDispositiu) AS canv
+                            INNER JOIN dispositius AS disp
+                                ON disp.id = canv.idDispositiu
+                            WHERE disp.idUsuariPropietari = %s 
+                                AND estatReg = 1
+                            """
+            dades_lastRegUsuari = db.executaQuery(query_lastRegUsuari, params_lastRegUsuari)
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar la hora del últim canviReg dels dispositius d'un usuari: {str(e)}"}), 500
+
+        else:
+            if len(dades_lastRegUsuari) == 0: # no s'ha regat mai
+                idDispositiu = ""
+                dataHoraIniciReg = ""
+                dataHoraFiReg = ""
+                dades_formatejades = [{"idDispositiu": idDispositiu, "dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg}]
+                return jsonify({'success': True, 'dades': dades_formatejades})
+
+            else:
+                dades_formatejades = []
+                for ultimaDadaDisp in dades_lastRegUsuari:
+                    idDispositiu = ultimaDadaDisp[0] 
+                    valorLastRegDisp = ultimaDadaDisp[1]
+                    dataHoraLastRegDisp = ultimaDadaDisp[2]
+
+                    try: 
+                        params_lastlastReg = (idDispositiu, dataHoraLastRegDisp)
+                        query_lastlastReg = """SELECT estatReg, dataHora
+                                            FROM canvisReg 
+                                            WHERE idDispositiu = %s 
+                                            AND dataHora > %s 
+                                            AND estatReg = 0
+                                            LIMIT 1"""
+                        dades_lastlastReg = db.executaQuery(query_lastlastReg, params_lastlastReg)
+                        
+                        
+                    except Exception as e:
+                        return jsonify({'success': False, 'error': f"Error al consultar la hora de la ultima parada de reg: {str(e)}"}), 500
+                    
+                    else:
+                        if len(dades_lastlastReg) == 0: # s'ha començat a regar però no s'ha acabat
+                            dataHoraIniciReg = dataHoraLastRegDisp
+                            dataHoraFiReg = ""
+                            dades_formatejades.append({"idDispositiu": idDispositiu, "dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg})
+                        else: # s'ha començat i acabat de regar
+                            dataHoraIniciReg = dataHoraLastRegDisp
+                            dataHoraFiReg = dades_lastlastReg[0][1]
+                            dades_formatejades.append({"idDispositiu": idDispositiu, "dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg})
+                    
+                return jsonify({'success': True, 'dades': dades_formatejades})                
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+
 
 @app.route('/obtenirUltimaDadaDispositiu', methods = ['GET'])
 def obtenirUltimaDadaDispositiu():
