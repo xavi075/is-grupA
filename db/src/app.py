@@ -386,8 +386,10 @@ def assignaDispositiuUsuari():
 @app.route('/desassignaDispositiu', methods = ['POST'])
 def desassignaDispositiu():
     """
-    Endpoint de Flask per desassignar un dispositiu a un usuari. Només permet desassignar-lo si el 
-    dispositiu està assignat, és a dir que està assignat a un altra usuari.
+    Endpoint de Flask per desassignar un dispositiu a un usuari. Només es pot desassignar un dispositiu
+    si aquest està assignat a un usuari. A més, s'esborren totes les dades del dispositiu de les taules 
+    de dades corresponents a les dades de humitat i temperatura (dadesDispositius) i a la de canvis d'estat 
+    de reg (canvisReg)
     """
     try: 
         try: 
@@ -396,16 +398,20 @@ def desassignaDispositiu():
             return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
 
         idDispositiu = dades_json.get('idDispositiu')
+        idUsuari = dades_json.get('idUsuari')
 
         if idDispositiu is None:
             return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
+        elif idUsuari is None:
+            return jsonify({'success': False, 'error': f"Camp 'idUsuari' no especificat en el JSON"}), 400
         
         else:
             try:
-                query = """SELECT idUsuariPropietari
+                query = """SELECT *
                         FROM dispositius
-                        WHERE id = %s"""
-                params = (idDispositiu, )
+                        WHERE id = %s
+                        AND idUsuariPropietari = %s"""
+                params = (idDispositiu, idUsuari, )
                 dades = db.executaQuery(query, params)
             
             except Exception as e:
@@ -415,21 +421,19 @@ def desassignaDispositiu():
                 if len(dades) == 0:
                     return jsonify({'success': False, 'error': f"No existeix cap dispositiu amb l'identificador especificat"}), 400
                 else:
-                    if dades[0][0] == None:
-                        return jsonify({'success': False, 'error': f"El dispositiu ja està desassignat"}), 400
+                    db.començaTransaccio()
+                    try:
+                        db.update('dispositius', {'idUsuariPropietari': None, 'nomDispositiu': None, 'nivellMinimReg': None, 'nivellMaximReg': None}, "id = " + str(idDispositiu))
+                        db.delete('dadesDispositius', 'idDispositiu =' + str(idDispositiu))
+                        db.delete('canvisReg', 'idDispositiu =' + str(idDispositiu))
+
+                    except Exception as e:
+                        db.rollback()
+                        return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
                     
                     else:
-                        db.començaTransaccio()
-                        try:
-                            db.update('dispositius', {'idUsuariPropietari': None, 'nomDispositiu': None, 'nivellMinimReg': None, 'nivellMaximReg': None}, "id = " + str(idDispositiu))
-
-                        except Exception as e:
-                            db.rollback()
-                            return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
-                        
-                        else:
-                            db.commit()
-                            return jsonify({'success': True})
+                        db.commit()
+                        return jsonify({'success': True})
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
