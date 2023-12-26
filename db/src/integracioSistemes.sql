@@ -117,4 +117,23 @@ BEGIN
     END IF;
 END;
 //
+
+-- trigger per no assignar el mateix id hardcode a un usuari
+CREATE TRIGGER verifica_idHardcodeUsuariRepetit
+BEFORE UPDATE ON dispositius
+FOR EACH ROW
+BEGIN
+    DECLARE num_dispositius INT;
+
+    SELECT COUNT(*) INTO num_dispositius
+    FROM dispositius
+    WHERE idUsuariPropietari = NEW.idUsuariPropietari
+        AND idHardcode = NEW.idHardcode;
+
+    IF num_dispositius > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error: L''usuari ja té un dispositiu amb el mateix idHardcode';
+    END IF;
+END;
+//
 DELIMITER ;

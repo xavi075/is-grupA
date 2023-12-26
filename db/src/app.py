@@ -183,18 +183,19 @@ def inserirDispositiu():
         if idHardcode is None:
             return jsonify({'success': False, 'error': f"Camp 'idHardcode' no especificat en el JSON"}), 400
         
-        db.començaTransaccio()
-        try:
-            db.insert('dispositius', {'idHardcode': idHardcode, 'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu, 'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax})
-        except Exception as e:
-            db.rollback()
-            return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
         else:
-            db.commit()
-            dadesDispositiuInsertat = db.executaQuery("SELECT id, idHardcode FROM dispositius ORDER BY id DESC LIMIT 1")
-            idDispositiuInsertat = dadesDispositiuInsertat[0][0]
-            idHardcodeDispositiuInsertat = dadesDispositiuInsertat[0][1]
-            return jsonify({'success': True, 'idDispositiu': idDispositiuInsertat, 'idHardcode': str(idHardcodeDispositiuInsertat)})
+            db.començaTransaccio()
+            try:
+                db.insert('dispositius', {'idHardcode': idHardcode, 'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu, 'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax})
+            except Exception as e:
+                db.rollback()
+                return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+            else:
+                db.commit()
+                dadesDispositiuInsertat = db.executaQuery("SELECT id, idHardcode FROM dispositius ORDER BY id DESC LIMIT 1")
+                idDispositiuInsertat = dadesDispositiuInsertat[0][0]
+                idHardcodeDispositiuInsertat = dadesDispositiuInsertat[0][1]
+                return jsonify({'success': True, 'idDispositiu': idDispositiuInsertat, 'idHardcode': str(idHardcodeDispositiuInsertat)})
     
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -610,7 +611,7 @@ def obtenirDispositius():
 
         if idDispositiu:
             # Obtenir les dades d'un dispositiu específic
-                query = """SELECT id, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
+                query = """SELECT id, idHardcode, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
                         FROM dispositius
                         WHERE id = %s"""
                 params = (idDispositiu, )
@@ -618,21 +619,21 @@ def obtenirDispositius():
         elif idUsuari:
             if nomDispositiu:
                 # Obtenir les dades d'un nom de dispositiu i usuari
-                query = """SELECT id, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
+                query = """SELECT id, idHardcode, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
                         FROM dispositius 
                         WHERE idUsuariPropietari = %s AND nomDispositiu = %s"""
                 params = (idUsuari, nomDispositiu)
 
             else:
                 # Obtenir les dades d'un usuari específic
-                query = """SELECT id, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
+                query = """SELECT id, idHardcode, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
                         FROM dispositius
                         WHERE idUsuariPropietari = %s"""
                 params = (idUsuari, )
 
         else:
             # Obtenir les dades de tots els dispositius
-            query = "SELECT id, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg FROM dispositius"
+            query = "SELECT id, idHardcode, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg FROM dispositius"
             params = ()
 
         try: 
@@ -645,10 +646,11 @@ def obtenirDispositius():
             dades_formatejades = [
                 {
                     "id": dispo[0],
-                    "idUsuariPropietari": dispo[1],
-                    "nomDispositiu": dispo[2],
-                    "llindarMinimReg": dispo[3],
-                    "llindarMaximReg": dispo[4]
+                    "idHardcode": dispo[1],
+                    "idUsuariPropietari": dispo[2],
+                    "nomDispositiu": dispo[3],
+                    "llindarMinimReg": dispo[4],
+                    "llindarMaximReg": dispo[5]
                 }
                 for dispo in dades_dispositius
             ]
@@ -676,7 +678,8 @@ def obtenirDispositiusDesassignats():
         else:     
             dades_formatejades = [
                 {
-                    "id": dispo[0],
+                    "idDispositiu": dispo[0],
+                    "idHardcode": str(dispo[1])
                 }
                 for dispo in dades_dispositius
             ]
