@@ -335,7 +335,7 @@ def verificaLogIn():
 def assignaDispositiuUsuari():
     """
     Endpoint de Flask per assignar un dispositiu a un usuari. Només permet assignar-lo si el dispositiu
-    està desassignat, és a dir que no està assignat a cap altra usuari.
+    està desassignat, és a dir, que no està assignat a cap altra usuari.
     """
     try: 
         try: 
@@ -358,11 +358,13 @@ def assignaDispositiuUsuari():
         
         else:
             try:
-                query = """SELECT idUsuariPropietari
+                query = """SELECT idHardcode, idUsuariPropietari
                         FROM dispositius
                         WHERE id = %s"""
                 params = (idDispositiu, )
                 dades = db.executaQuery(query, params)
+                
+                idHardcode = dades[0][0]
             
             except Exception as e:
                 return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
@@ -371,7 +373,7 @@ def assignaDispositiuUsuari():
                 if len(dades) == 0:
                     return jsonify({'success': False, 'error': f"No existeix cap dispositiu amb l'identificador especificat"}), 400
                 else:
-                    if dades[0][0] != None:
+                    if dades[0][1] != None:
                         return jsonify({'success': False, 'error': f"El dispositiu està assignat a un altre usuari"}), 400
                     
                     else:
@@ -385,7 +387,7 @@ def assignaDispositiuUsuari():
                         
                         else:
                             db.commit()
-                            return jsonify({'success': True})
+                            return jsonify({'success': True, 'dades': [{'idHardcode': str(idHardcode)}]})
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
