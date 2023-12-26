@@ -13,6 +13,7 @@ CREATE TABLE usuaris (
 
 CREATE TABLE dispositius (
     id INT AUTO_INCREMENT PRIMARY KEY,
+    idHardcode VARCHAR(4) NOT NULL,
     idUsuariPropietari INT,
     nomDispositiu VARCHAR(50),
     nivellMinimReg DECIMAL,

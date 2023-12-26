@@ -26,7 +26,7 @@ import pytz
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, resources = {"r/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources = {r"/*": {"origins": "http://localhost:3000"}})
 # connexió a la base de dades
 db = mariaDBConn('localhost', 'arnau', 'isgrupA', 'integracioSistemes')
 db.conecta()
@@ -166,7 +166,7 @@ def inserirUsuari():
 def inserirDispositiu():
     """
     Endpoint de Flask per inserir dades a la taula dispositius. Permet inserir un dispositiu no assignat a
-    cap usuari.
+    cap usuari. Tot i així, és obligatori afegir-li un id que el permeti identifiqui amb el hardware. 
     """
     try: 
         try: 
@@ -174,21 +174,27 @@ def inserirDispositiu():
         except Exception as e:
             return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
 
+        idHardcode = dades_json.get('idHardcode')
         idUsuari = dades_json.get('idUsuariPropietari')
         nomDispositiu = dades_json.get('nomDispositiu')
         llindarMin = dades_json.get('llindarMinimReg')
         llindarMax = dades_json.get('llindarMaximReg')
 
+        if idHardcode is None:
+            return jsonify({'success': False, 'error': f"Camp 'idHardcode' no especificat en el JSON"}), 400
+        
         db.començaTransaccio()
         try:
-            db.insert('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu, 'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax})
+            db.insert('dispositius', {'idHardcode': idHardcode, 'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu, 'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax})
         except Exception as e:
             db.rollback()
             return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
         else:
             db.commit()
-            idDispositiuInsertat = db.executaQuery("SELECT id FROM dispositius ORDER BY id DESC LIMIT 1")[0][0]
-            return jsonify({'success': True, 'iDispositiuInsertat': idDispositiuInsertat})
+            dadesDispositiuInsertat = db.executaQuery("SELECT id, idHardcode FROM dispositius ORDER BY id DESC LIMIT 1")
+            idDispositiuInsertat = dadesDispositiuInsertat[0][0]
+            idHardcodeDispositiuInsertat = dadesDispositiuInsertat[0][1]
+            return jsonify({'success': True, 'idDispositiu': idDispositiuInsertat, 'idHardcode': str(idHardcodeDispositiuInsertat)})
     
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
