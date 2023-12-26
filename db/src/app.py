@@ -211,28 +211,48 @@ def inserirDadesDispositiu():
         except Exception as e:
             return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
 
-        idDispositiu = dades_json.get('idDispositiu')
+        idHardcode = dades_json.get('idHardcode')
         dataCreacio_utc = datetime.now(pytz.utc)
         dadaHum = dades_json.get('dadaHum')
         dadaTemp = dades_json.get('dadaTemp')
 
-        if idDispositiu is None:
-            return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
+        if idHardcode is None:
+            return jsonify({'success': False, 'error': f"Camp 'idHardcode' no especificat en el JSON"}), 400
         elif dadaHum is None:
             return jsonify({'success': False, 'error': f"Camp 'dadaHum' no especificat en el JSON"}), 400
         elif dadaTemp is None:
             return jsonify({'success': False, 'error': f"Camp 'dadaTemp' no especificat en el JSON"}), 400
         
         else:
-            db.començaTransaccio()
-            try:
-                db.insert('dadesDispositius', {'idDispositiu': idDispositiu, 'dataHora': dataCreacio_utc, 'dadaHum': dadaHum, 'dadaTemp': dadaTemp})
+            
+            # Obtenir les dades de tots els dispositius
+            query = """SELECT id 
+                    FROM dispositius 
+                    WHERE idHardcode = %s 
+                        AND idUsuariPropietari IS NOT NULL"""
+            params = (idHardcode, )
+
+            try: 
+                dades_dispositius = db.executaQuery(query, params)
+
             except Exception as e:
-                db.rollback()
-                return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+                return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+            
             else:
-                db.commit()
-                return jsonify({'success': True})
+                
+                if(len(dades_dispositius) == 0):
+                    return jsonify({'success': False, 'error': f"No hi ha dispositius assignats amb el idHardcode especificat en el JSON"}), 400
+                else:
+                    idDispositiu = dades_dispositius[0][0]
+                    db.començaTransaccio()
+                    try:
+                        db.insert('dadesDispositius', {'idDispositiu': idDispositiu, 'dataHora': dataCreacio_utc, 'dadaHum': dadaHum, 'dadaTemp': dadaTemp})
+                    except Exception as e:
+                        db.rollback()
+                        return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+                    else:
+                        db.commit()
+                        return jsonify({'success': True})
     
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -387,7 +407,7 @@ def assignaDispositiuUsuari():
                         
                         else:
                             db.commit()
-                            return jsonify({'success': True, 'dades': [{'idHardcode': str(idHardcode)}]})
+                            return jsonify({'success': True, 'dades': {'idHardcode': str(idHardcode)}})
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
