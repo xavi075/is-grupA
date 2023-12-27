@@ -16,7 +16,7 @@ const Account =  () => {
 
   return(
     <div className="account-box">
-      <h2>Account page</h2>
+      <h2>El meu compte</h2>
       <ChangePassword />
       <Link className="logout-link" to="/" onClick={logout}>Tanca la sessió</Link>
     </div>

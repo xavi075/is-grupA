@@ -1,4 +1,4 @@
-import { ILogged, ILastInfo, IUserDevices, IRegister } from "./interfaces";
+import { ILogged, ILastInfo, IUserDevices, IRegister, IData, IAvailableDevices } from "./interfaces";
 
 const ENDPOINT = 'http://127.0.0.1:5000';
 
@@ -54,14 +54,14 @@ export function changePwdRequest(idUsuari:string, contrasenya:string, novaContra
   })
 }
 
-export function getLastInfo (usernameId: string): Promise<ILastInfo> {
-    return fetch(`${ENDPOINT}/ENCARAPERDECIDIR/${usernameId}`, {
+export function getLastWaterInfo (usernameId: number): Promise<ILastInfo> {
+    return fetch(`${ENDPOINT}/obtenirUltimReg?idDispositiu=${usernameId}`, {
         method: 'GET',
         headers: {
             "Content-type": "application/json"
         },
     }).then(res => {
-        if (!res.ok) throw new Error('Response is not OK')
+        if (!res.ok) throw new Error('Response of get last water info is not OK')
         return res.json()
     }).then( res => {
         return res 
@@ -82,8 +82,8 @@ export function getUserDevices (usernameId: string): Promise<IUserDevices> {
     })
 }
 
-export function getAvailableDevices (): Promise<IUserDevices> {
-  return fetch(`${ENDPOINT}/obtenirDispositiusDesassignats/`, {
+export function getAvailableDevices (): Promise<IAvailableDevices> {
+  return fetch(`${ENDPOINT}/obtenirDispositiusDesassignats`, {
       method: 'GET',
       headers: {
           "Content-type": "application/json"
@@ -111,13 +111,13 @@ export function getDeviceInfo (deviceId: number): Promise<IUserDevices> {
     })
 }
 
-export function assignDeviceUser (deviceId: number, userId: string | null): Promise<IUserDevices> {
-  return fetch(`${ENDPOINT}/assignaDIspositiuUsuari/`, {
+export function assignDeviceUser (idDispositiu: number, idUsuari: string, nomDispositiu:string ): Promise<IUserDevices> {
+  return fetch(`${ENDPOINT}/assignaDispositiuUsuari`, {
       method: 'POST',
       headers: {
           "Content-type": "application/json"
       },
-      body: JSON.stringify({deviceId, userId})
+      body: JSON.stringify({idDispositiu, idUsuari, nomDispositiu})
   }).then(res => {
       if (!res.ok) throw new Error('Response is not OK')
       return res.json()
@@ -126,17 +126,64 @@ export function assignDeviceUser (deviceId: number, userId: string | null): Prom
   })
 }
 
-  export function insertThreshold (idDispositiu: number, llindarMinimReg: number, llindarMaximReg: number): Promise<IUserDevices> {
-    return fetch(`${ENDPOINT}/modificaLlindars`, {
-        method: 'POST',
-        headers: {
-            "Content-type": "application/json"
-        },
-        body: JSON.stringify({idDispositiu, llindarMinimReg, llindarMaximReg})
+export function insertThreshold (idDispositiu: number, llindarMinimReg: number, llindarMaximReg: number): Promise<IUserDevices> {
+return fetch(`${ENDPOINT}/modificaLlindars`, {
+    method: 'POST',
+    headers: {
+        "Content-type": "application/json"
+    },
+    body: JSON.stringify({idDispositiu, llindarMinimReg, llindarMaximReg})
+}).then(res => {
+    if (!res.ok) throw new Error('Response is not OK')
+    return res.json()
+}).then( res => {
+    return res 
+})
+}
+
+export function deleteDeviceUser (idDispositiu: number, idUsuari: string): Promise<IUserDevices> {
+  return fetch(`${ENDPOINT}/desassignaDispositiu`, {
+      method: 'POST',
+      headers: {
+          "Content-type": "application/json"
+      },
+      body: JSON.stringify({idDispositiu, idUsuari})
+  }).then(res => {
+      if (!res.ok) throw new Error('Response is not OK')
+      return res.json()
+  }).then( res => {
+      return res 
+  })
+}
+
+export function getDeviceData (deviceId: number, startDate:string, finalDate:string): Promise<IData> {
+
+  if (startDate === "" || finalDate === ""){
+    return fetch(`${ENDPOINT}/obtenirDadesDispositius?idDispositiu=${deviceId}`, {
+      method: 'GET',
+      headers: {
+          "Content-type": "application/json"
+      },
     }).then(res => {
-        if (!res.ok) throw new Error('Response is not OK')
-        return res.json()
+      console.log(res)
+      if (!res.ok) throw new Error('Response is not OK')
+      return res.json()
     }).then( res => {
-        return res 
+      return res 
     })
+  } else {
+    return fetch(`${ENDPOINT}/obtenirDadesDispositius?idDispositiu=${deviceId}?dataInici=${startDate}?dataFi=${finalDate}`, {
+      method: 'GET',
+      headers: {
+          "Content-type": "application/json"
+      },
+  }).then(res => {
+      console.log(res)
+      if (!res.ok) throw new Error('Response is not OK')
+      return res.json()
+  }).then( res => {
+      return res 
+  })
   }
+}
+
