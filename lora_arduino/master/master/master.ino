@@ -28,6 +28,7 @@ void loop() {
   // Serial.println("Nada por aqui");
 }
 
+// per enviar un missatge a qualsevol esclau responent a un missatge per LoRa
 void sendMessage(byte destinationAddress, byte msgIdResponse, String outgoing){
   // send packet
   LoRa.beginPacket();
@@ -44,6 +45,7 @@ void sendMessage(byte destinationAddress, byte msgIdResponse, String outgoing){
   LoRa.endPacket();
 }
 
+// Per llegir un missatge LoRa. S'executa quan es rep un missatge per LoRa
 void onReceive(int packetSize){
   if (packetSize) {
     

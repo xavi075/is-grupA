@@ -1,9 +1,18 @@
 #include <SPI.h>
 #include <LoRa.h>
 
+#include "tmr0.h"
+
 byte msgId = 0; // comptador dels missatges de sortida
 byte localAddress = 0xAA; // adreça del dispositiu
 byte masterAddress = 0x00; // adreça del dispositiu master
+int interval_s = 10; // interval de temps entre comunicacions amb master
+
+// per iniciar la comunicació amb el master
+void iniciaComunicacioMaster() {
+  sendMessage("hello");
+  LoRa.receive();
+}
 
 void setup() {
   Serial.begin(9600);
@@ -15,6 +24,9 @@ void setup() {
   while(!LoRa.begin(866E6));
   Serial.println("Starting LoRa!");
 
+  // iniciem el el timer per a la comunicació amb el master 
+  setup_tmr0(interval_s, iniciaComunicacioMaster);
+
   //register the receive callback
   LoRa.onReceive(onReceive);
   //put the radio into receive mode
@@ -25,18 +37,13 @@ void setup() {
 }
 
 void loop() {
+}
+
+// per enviar un missatge al master per LoRa
+void sendMessage(String outgoing){
   Serial.print("Sending packet: ");
   Serial.println(msgId);
 
-  sendMessage("hello");
-  LoRa.receive();
-
-  //delay(300000);
-  //delay(60000);
-  delay(10000);
-}
-
-void sendMessage(String outgoing){
   // send packet
   LoRa.beginPacket();
   LoRa.write(masterAddress);
@@ -54,6 +61,7 @@ void sendMessage(String outgoing){
   msgId++;
 }
 
+// Per llegir un missatge LoRa. S'executa quan es rep un missatge per LoRa
 void onReceive(int packetSize){
   if (packetSize) {
     
