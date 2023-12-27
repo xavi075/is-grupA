@@ -1,13 +1,15 @@
 #include <SPI.h>
 #include <LoRa.h>
 
-int counter = 0;
+byte msgId = 0; // comptador dels missatges de sortida
+byte localAddress = 0xAA; // adreça del dispositiu
+byte masterAddress = 0x00; // adreça del dispositiu master
 
 void setup() {
   Serial.begin(9600);
   while (!Serial);
 
-  Serial.println("LoRa Receiver");
+  Serial.println("LoRa Slave");
 
   LoRa.setPins(10,5,2); //Per sensor
   while(!LoRa.begin(866E6));
@@ -24,42 +26,67 @@ void setup() {
 
 void loop() {
   Serial.print("Sending packet: ");
-  Serial.println(counter);
+  Serial.println(msgId);
 
   sendMessage("hello");
   LoRa.receive();
-  counter++;
 
-  delay(5000);
+  //delay(300000);
+  //delay(60000);
+  delay(10000);
 }
 
 void sendMessage(String outgoing){
   // send packet
   LoRa.beginPacket();
+  LoRa.write(masterAddress);
+  LoRa.write(localAddress);
+  LoRa.write(msgId);
+  
+  byte CRC = 0x00; // substituir per calcul de CRC
+  LoRa.write(CRC);
+
+  LoRa.write(outgoing.length());
+
   LoRa.print(outgoing);
   LoRa.endPacket();
+
+  msgId++;
 }
 
 void onReceive(int packetSize){
   if (packetSize) {
-    // received a packet
-    Serial.print("Received packet '");
+    
+    // read packet header bytes
+    int recipient = LoRa.read();
+    byte senderAddress = LoRa.read();
+    byte incomingMsgId = LoRa.read();
+    byte incomingCRC = LoRa.read();
+    byte incomingLength = LoRa.read();
 
-    char missatge[20];
-    int i = 0;
-    // read packet
-    while (i < packetSize) {
-      char caracter = (char)LoRa.read();
-      missatge[i] = caracter;
-      i++;      
-      Serial.print(caracter);
+    //comprovem si som el receptor del paquet
+    if (recipient != localAddress) {
+      Serial.println("Aquest missatge no és per mi.");
+      return;
     }
-    /*if(missatge[0] == 'h' && missatge[1] == 'e' && missatge[2] == 'l' && missatge[3] == 'l' && missatge[4] == 'o'){
-      digitalWrite(4,LOW);
-    }*/
 
-    sendMessage("Bye ACK\n");
-    Serial.println("Bye ACK");
+    String incoming = "";
+    // llegim el paquet enviat
+    while (LoRa.available()) {
+      incoming += (char)LoRa.read();
+    }
+
+    // received a packet
+    Serial.print("Received packet: ");
+    Serial.println(incoming);
+    
+    if (strcmp(incoming.c_str(), "Bye") == 0)  {
+      sendMessage("ByeACK");
+      Serial.println("Sending packet: ByeACK");
+    }
+
+    LoRa.receive();
+    LoRa.onReceive(onReceive);
 
     LoRa.receive();
   }

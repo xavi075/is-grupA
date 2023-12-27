@@ -1,6 +1,8 @@
 #include <SPI.h>
 #include <LoRa.h>
 
+byte localAddress = 0x00; // adreça del dispositiu master
+
 void setup() {
   Serial.begin(9600);
   while (!Serial);
@@ -18,42 +20,64 @@ void setup() {
   
   pinMode(4,OUTPUT);
   digitalWrite(4,HIGH);
+  delay(5000);
 }
 
 void loop() {
-  
+  // delay(5000);
+  // Serial.println("Nada por aqui");
 }
 
-void sendMessage(String outgoing){
+void sendMessage(byte destinationAddress, byte msgIdResponse, String outgoing){
   // send packet
   LoRa.beginPacket();
+  LoRa.write(destinationAddress);
+  LoRa.write(localAddress);
+  LoRa.write(msgIdResponse); //id del missatge que es respon
+
+  byte CRC = 0x00; // substituir per calcul de CRC
+  LoRa.write(CRC);
+
+  LoRa.write(outgoing.length());
+
   LoRa.print(outgoing);
   LoRa.endPacket();
 }
 
 void onReceive(int packetSize){
-  Serial.print("On receive --> ");
-  if (packetSize == 0) return;
-  // received a packet
-  Serial.print("Received packet '");
+  if (packetSize) {
+    
+    // read packet header bytes
+    int recipient = LoRa.read();
+    byte senderAddress = LoRa.read();
+    byte incomingMsgId = LoRa.read();
+    byte incomingCRC = LoRa.read();
+    byte incomingLength = LoRa.read();
 
-  //char missatge[20];
-  //int i = 0;
-  String missatge = "";
-  // read packet
-  while (LoRa.available()) {
-    char caracter = (char)LoRa.read();
-    missatge += caracter;      
-    Serial.print(caracter);
+    //comprovem si som el receptor del paquet
+    if (recipient != localAddress) {
+      Serial.println("Aquest missatge no és per mi.");
+      return;
+    }
+
+    String incoming = "";
+    // llegim el paquet enviat
+    while (LoRa.available()) {
+      incoming += (char)LoRa.read();
+    }
+
+    // received a packet
+    Serial.print("Received packet: ");
+    Serial.println(incoming);
+    
+    if (strcmp(incoming.c_str(), "hello") == 0)  {
+      digitalWrite(4,LOW);
+      sendMessage(senderAddress, incomingMsgId, "Bye");
+      Serial.println("Sending packet: Bye");
+    }
+
+    LoRa.receive();
+    LoRa.onReceive(onReceive);
   }
-  //if(missatge[0] == 'h' && missatge[1] == 'e' && missatge[2] == 'l' && missatge[3] == 'l' && missatge[4] == 'o'){
-  //  digitalWrite(4,LOW);
-  //  sendMessage("Bye \n");
-  //  Serial.println("Bye");
-  //}
-  if (missatge == "hello"){
-    sendMessage("Bye\n");
-    Serial.println("Bye");
-  }
-  LoRa.receive();
+  Serial.println("LoRa Receiver");
 }
