@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { format, set, setDate, startOfDay, subMonths, subWeeks } from 'date-fns';
+
 import { useUser } from '../../../context/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 // import "./ChangeParameters.css";
@@ -12,35 +14,46 @@ import { Link } from "react-router-dom";
 const DataTable =  (props: {deviceId: number | undefined}) => {
 //   const { usernameId } = useUser();
   const [ContentChanged, setContentChanged] = useState(false);
-  const [LlindarInferior, setLlindarInferior] = useState(30);
-  const [LlindarSuperior, setLlindarSuperior] = useState(50);
+
   const [StartDate, setStartDate] = useState("");
   const [FinalDate, setFinalDate] = useState("");
   const [Data, setData] = useState<IData>();
 
-  const handleLlindarInferiorChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(event.target.value);
-    if (value < LlindarSuperior && value !== LlindarInferior) {
-      setLlindarInferior(value);
-    }
-  };
   
-  const handleLlindarSuperiorChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(event.target.value);
-    if (value > LlindarInferior && value !== LlindarSuperior) {
-      setLlindarSuperior(value);
-    }
+  const handleAllData = () => {
+    setStartDate("");
+    setFinalDate("");
   };
 
-  const handleGuardar = () => {
-    console.log('Llindar Inferior:', LlindarInferior);
-    console.log('Llindar Superior:', LlindarSuperior);
-    if (LlindarInferior && LlindarSuperior && props.deviceId != null){
-      insertThreshold(props.deviceId, LlindarInferior, LlindarSuperior)
-      //TO-DO: Manejar resposta
-      setContentChanged(true)
-    }
+  const handleLastMonth = () => {
+    const CurrentDate = new Date();
+    const OneMonthDate = subMonths(CurrentDate, 1);
+
+    setDates(CurrentDate, OneMonthDate);
   };
+
+  const handleLastWeek = () => {
+    const CurrentDate = new Date();
+    const OneWeekDate = subWeeks(CurrentDate, 1);
+
+    setDates(CurrentDate, OneWeekDate);
+  };
+
+  const handleToday = () => {
+    const CurrentDate = new Date();
+    const TodayDate = startOfDay(CurrentDate);
+
+    setDates(CurrentDate, TodayDate);
+  };
+
+  const setDates = (startDate: Date, finalDate: Date) => {
+    const formattedStartDate = format(startDate, 'dd-MM-yyyy HH:mm:ss');
+    const formattedFinalDate = format(finalDate, 'dd-MM-yyyy HH:mm:ss');
+
+    setStartDate(formattedStartDate);
+    setFinalDate(formattedFinalDate);
+  }
+
 
 useEffect(() => {
   if (props.deviceId != undefined){
@@ -53,12 +66,26 @@ useEffect(() => {
         console.error('Error when user devices: ', error);
     });
   }
-  }, [props.deviceId, ContentChanged])
+  }, [props.deviceId, ContentChanged, StartDate])
+  // TO-DO: Canviar startdate per un estat de dates canviades?
 
   return (
     <>
     <div className='data-table-container'>
     <h3>Registre de dades</h3>
+    {/* TO-DO: Botons amb handle que modifiquen states */}
+    <Link className="add-device-link" to="#" onClick={handleAllData}>
+      Totes les dades
+    </Link>
+    <Link className="add-device-link" to="#" onClick={handleLastMonth}>
+      Últim mes
+    </Link>
+    <Link className="add-device-link" to="#" onClick={handleLastWeek}>
+      Última setmana
+    </Link>
+    <Link className="add-device-link" to="#" onClick={handleToday}>
+      Avui
+    </Link>
     <table className='table-info'>
       <thead>
           <tr>
