@@ -13,7 +13,7 @@ CREATE TABLE usuaris (
 
 CREATE TABLE dispositius (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    idHardcode VARCHAR(4) UNIQUE NOT NULL,
+    idHardcode VARCHAR(8) UNIQUE NOT NULL,
     idUsuariPropietari INT,
     nomDispositiu VARCHAR(50),
     nivellMinimReg DECIMAL,
@@ -117,4 +117,24 @@ BEGIN
     END IF;
 END;
 //
+
+-- trigger per verificar que s'insereixi un dispositiu amb idHardcode repetit, solucionant d'aquesta manera
+-- problemes amb el auto_increment del id
+CREATE TRIGGER verifica_idHardcodeRepetit
+BEFORE INSERT ON dispositius
+FOR EACH ROW
+BEGIN
+    DECLARE num_dispositius INT;
+
+    SELECT COUNT(*) INTO num_dispositius
+    FROM dispositius
+    WHERE idHardcode = NEW.idHardcode;
+
+    IF num_dispositius > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error: Ja hi ha un dispositiu insertat amb aquest idHardcode';
+    END IF;
+END;
+//
+
 DELIMITER ;

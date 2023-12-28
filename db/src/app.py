@@ -260,7 +260,7 @@ def inserirDadesDispositiu():
 @app.route('/inserirEstatReg', methods = ['POST'])
 def inserirEstatReg():
     """
-    Endpoint de Flask per inserir dades a la taula canvisReg. Aquest només insereix és els canvis, és a dir
+    Endpoint de Flask per inserir dades a la taula canvisReg. Aquest només insereix els canvis, és a dir,
     només insereix la dada si la última dada del dispositiu és diferent.
     """
     try: 
@@ -269,42 +269,56 @@ def inserirEstatReg():
         except Exception as e:
             return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
 
-        idDispositiu = dades_json.get('idDispositiu')
+        idHardcode = dades_json.get('idHardcode')
         dataCreacio_utc = datetime.now(pytz.utc)
         estatReg = dades_json.get('estatReg')
 
-        if idDispositiu is None:
-            return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
+        if idHardcode is None:
+            return jsonify({'success': False, 'error': f"Camp 'idHardcode' no especificat en el JSON"}), 400
         elif estatReg is None:
             return jsonify({'success': False, 'error': f"Camp 'estatReg' no especificat en el JSON"}), 400
         
         else:
+            
             try:
-                query = """SELECT estatReg
-                        FROM canvisReg
-                        WHERE idDispositiu = %s
-                        ORDER BY dataHora DESC
-                        LIMIT 1"""
-                params = (idDispositiu, )
-                last_estatReg = db.executaQuery(query, params)
-
+                query = """SELECT id
+                        FROM dispositius
+                        WHERE idHardcode = %s
+                        """
+                params = (idHardcode, )
+                dades_id = db.executaQuery(query, params)
+                idDispositiu = dades_id[0][0]
+                
             except Exception as e:
                 return jsonify({'success': False, 'error': f"Error al consultar l'última dada: {str(e)}"}), 500
+            
             else:
-                # només s'insereix la dada si la dada és diferent a l'última dada inserida
-                if len(last_estatReg) > 0: # hi ha alguna dada inserida
-                    if last_estatReg[0][0] == estatReg: # l'última dada inserida és igual
-                        return jsonify({'success': True, 'dadaInserida': False})
-
-                db.començaTransaccio()
                 try:
-                    db.insert('canvisReg', {'idDispositiu': idDispositiu, 'dataHora': dataCreacio_utc, 'estatReg': estatReg})
+                    query = """SELECT estatReg
+                            FROM canvisReg
+                            WHERE idDispositiu = %s
+                            ORDER BY dataHora DESC
+                            LIMIT 1"""
+                    params = (idDispositiu, )
+                    last_estatReg = db.executaQuery(query, params)
+
                 except Exception as e:
-                    db.rollback()
-                    return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+                    return jsonify({'success': False, 'error': f"Error al consultar l'última dada: {str(e)}"}), 500
                 else:
-                    db.commit()
-                    return jsonify({'success': True, 'dadaInserida': True})
+                    # només s'insereix la dada si la dada és diferent a l'última dada inserida
+                    if len(last_estatReg) > 0: # hi ha alguna dada inserida
+                        if last_estatReg[0][0] == estatReg: # l'última dada inserida és igual
+                            return jsonify({'success': True, 'dadaInserida': False})
+
+                    db.començaTransaccio()
+                    try:
+                        db.insert('canvisReg', {'idDispositiu': idDispositiu, 'dataHora': dataCreacio_utc, 'estatReg': estatReg})
+                    except Exception as e:
+                        db.rollback()
+                        return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+                    else:
+                        db.commit()
+                        return jsonify({'success': True, 'dadaInserida': True})
     
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -900,7 +914,7 @@ def obtenirCanvisReg():
                 {
                     "idDispositiu": dada[0],
                     "dataHora": dada[1],
-                    "canviReg": dada[2],
+                    "estatReg": dada[2],
                 }
                 for dada in dades
             ]
