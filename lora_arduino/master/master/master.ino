@@ -1,7 +1,9 @@
 #include <SPI.h>
 #include <LoRa.h>
 
-byte localAddress = 0x00; // adreça del dispositiu master
+#include "secure.h"
+
+uint8_t localAddress[4] = {0x00, 0x00, 0x00, 0x00}; // adreça del dispositiu master
 
 void setup() {
   Serial.begin(9600);
@@ -29,15 +31,17 @@ void loop() {
 }
 
 // per enviar un missatge a qualsevol esclau responent a un missatge per LoRa
-void sendMessage(byte destinationAddress, byte msgIdResponse, String outgoing){
+void sendMessage(uint8_t destinationAddress[], byte msgIdResponse, String outgoing){
   // send packet
   LoRa.beginPacket();
-  LoRa.write(destinationAddress);
-  LoRa.write(localAddress);
+  LoRa.write(destinationAddress, 4);
+  LoRa.write(localAddress, 4);
   LoRa.write(msgIdResponse); //id del missatge que es respon
 
-  byte CRC = 0x00; // substituir per calcul de CRC
-  LoRa.write(CRC);
+  //uint8_t crc[4] = {0x00, 0x00, 0x00, 0x00}; // substituir per calcul de CRC
+  uint8_t crc[4];
+  calcularCRC(crc, outgoing.c_str(), outgoing.length());
+  LoRa.write(crc, 4);
 
   LoRa.write(outgoing.length());
 
@@ -50,14 +54,17 @@ void onReceive(int packetSize){
   if (packetSize) {
     
     // read packet header bytes
-    int recipient = LoRa.read();
-    byte senderAddress = LoRa.read();
+    uint8_t recipient[4];
+    LoRa.readBytes(recipient, 4);
+    uint8_t senderAddress[4];
+    LoRa.readBytes(senderAddress, 4);
     byte incomingMsgId = LoRa.read();
-    byte incomingCRC = LoRa.read();
+    uint8_t incomingCRC[4];
+    LoRa.readBytes(incomingCRC, 4);
     byte incomingLength = LoRa.read();
 
     //comprovem si som el receptor del paquet
-    if (recipient != localAddress) {
+    if (memcmp(recipient, localAddress, 4) != 0) {
       Serial.println("Aquest missatge no és per mi.");
       return;
     }
@@ -72,6 +79,14 @@ void onReceive(int packetSize){
     Serial.print("Received packet: ");
     Serial.println(incoming);
     
+    // verifiquem el CRC rebut i la longitud indicada
+    if (!verificarCRC(incoming.c_str(), incomingLength, incomingCRC)) {
+      Serial.print("CRC incorrecte: ");
+      for (int i = 0; i < 4; i++)
+        Serial.print(incomingCRC[i], HEX);
+      return;
+    }
+
     if (strcmp(incoming.c_str(), "hello") == 0)  {
       digitalWrite(4,LOW);
       sendMessage(senderAddress, incomingMsgId, "Bye");
