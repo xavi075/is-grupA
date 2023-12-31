@@ -6,6 +6,7 @@ import "./dataTable.css";
 import { IData } from '../../../utils/interfaces';
 import { getDeviceData, insertThreshold } from '../../../utils/api';
 import { Link } from "react-router-dom";
+import { convertDate } from '../../../utils/functions';
 
 
 
@@ -42,6 +43,8 @@ const DataTable =  (props: {deviceId: number | undefined}) => {
     const CurrentDate = new Date();
     const TodayDate = startOfDay(CurrentDate);
 
+    console.log(TodayDate)
+
     setDates(CurrentDate, TodayDate);
   };
 
@@ -49,15 +52,14 @@ const DataTable =  (props: {deviceId: number | undefined}) => {
     const formattedStartDate = format(startDate, 'dd-MM-yyyy HH:mm:ss');
     const formattedFinalDate = format(finalDate, 'dd-MM-yyyy HH:mm:ss');
 
+    console.log(formattedStartDate);
+    console.log(formattedFinalDate);
+
     setStartDate(formattedStartDate);
     setFinalDate(formattedFinalDate);
   }
 
-  const convertDate = (date: string) => {
-    const DateObject = new Date(date);
-    const formattedDate = format(DateObject, 'dd-MM-yyyy HH:mm:ss')
-    return formattedDate; 
-  }
+  
 
 
 useEffect(() => {
@@ -91,6 +93,7 @@ useEffect(() => {
     <Link className="date-change-link" to="#" onClick={handleToday}>
       Avui
     </Link>
+    <div className='table-scroll-container'>
     <table className='table-data'>
       <thead>
           <tr>
@@ -109,6 +112,7 @@ useEffect(() => {
         ))}
       </tbody>
     </table> 
+    </div>
     </div>
     </>
   )

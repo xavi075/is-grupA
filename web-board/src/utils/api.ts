@@ -54,8 +54,8 @@ export function changePwdRequest(idUsuari:string, contrasenya:string, novaContra
   })
 }
 
-export function getLastWaterInfo (usernameId: number): Promise<ILastInfo> {
-    return fetch(`${ENDPOINT}/obtenirUltimReg?idDispositiu=${usernameId}`, {
+export function getLastWaterInfo (usernameId: string): Promise<ILastInfo> {
+    return fetch(`${ENDPOINT}/obtenirUltimRegUsuari?idUsuari=${usernameId}`, {
         method: 'GET',
         headers: {
             "Content-type": "application/json"
@@ -172,7 +172,8 @@ export function getDeviceData (deviceId: number, startDate:string, finalDate:str
       return res 
     })
   } else {
-    return fetch(`${ENDPOINT}/obtenirDadesDispositius?idDispositiu=${deviceId}?dataInici=${startDate}?dataFi=${finalDate}`, {
+    console.log(startDate)
+    return fetch(`${ENDPOINT}/obtenirDadesDispositius?idDispositiu=${deviceId}&dataInici=${startDate}&dataFi=${finalDate}`, {
       method: 'GET',
       headers: {
           "Content-type": "application/json"

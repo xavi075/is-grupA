@@ -21,7 +21,7 @@ td {
   border-bottom: 1px solid #ddd;
 }
 
-td:last-child {
+.table-info td:last-child {
   text-align: right;
   font-weight: bold;
 }
