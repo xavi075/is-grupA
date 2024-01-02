@@ -1061,8 +1061,6 @@ def obtenirUltimRegUsuari():
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
 
-
-
 @app.route('/obtenirUltimaDadaDispositiu', methods = ['GET'])
 def obtenirUltimaDadaDispositiu():
     """
@@ -1150,7 +1148,7 @@ def obtenirUltimaDadaDispositiu():
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
-
+    
 @app.route('/obtenirModificacionsLlindars', methods = ['GET'])
 def obtenirModificacionsLlindars():
     """
