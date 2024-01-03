@@ -994,7 +994,6 @@ def obtenirUltimRegUsuari():
     Endpoint de Flask per obtenir les dades del últim reg de tots els dispositiu d'un usuari
     """
     try:
-        # idDispositiu = request.args.get('idDispositiu')
         idUsuari = request.args.get('idUsuari')
 
         if idUsuari is None:
@@ -1002,7 +1001,7 @@ def obtenirUltimRegUsuari():
 
         try: 
             params_lastRegUsuari = (idUsuari, )
-            query_lastRegUsuari = """SELECT canv.idDispositiu, canv.estatReg, canv.dataHora
+            query_lastRegUsuari = """SELECT canv.idDispositiu, canv.estatReg, canv.dataHora, disp.nomDispositiu
                             FROM (SELECT idDispositiu, estatReg, MAX(dataHora) AS dataHora 
                                 FROM canvisReg 
                                 WHERE estatReg = 1 
@@ -1020,9 +1019,10 @@ def obtenirUltimRegUsuari():
         else:
             if len(dades_lastRegUsuari) == 0: # no s'ha regat mai
                 idDispositiu = ""
+                nomDispositiu = ""
                 dataHoraIniciReg = ""
                 dataHoraFiReg = ""
-                dades_formatejades = [{"idDispositiu": idDispositiu, "dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg}]
+                dades_formatejades = [{"idDispositiu": idDispositiu, "nomDispositiu": nomDispositiu, "dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg}]
                 return jsonify({'success': True, 'dades': dades_formatejades})
 
             else:
@@ -1031,6 +1031,7 @@ def obtenirUltimRegUsuari():
                     idDispositiu = ultimaDadaDisp[0] 
                     valorLastRegDisp = ultimaDadaDisp[1]
                     dataHoraLastRegDisp = ultimaDadaDisp[2]
+                    nomDispositiu = ultimaDadaDisp[3]
 
                     try: 
                         params_lastlastReg = (idDispositiu, dataHoraLastRegDisp)
@@ -1050,11 +1051,11 @@ def obtenirUltimRegUsuari():
                         if len(dades_lastlastReg) == 0: # s'ha començat a regar però no s'ha acabat
                             dataHoraIniciReg = dataHoraLastRegDisp
                             dataHoraFiReg = ""
-                            dades_formatejades.append({"idDispositiu": idDispositiu, "dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg})
+                            dades_formatejades.append({"idDispositiu": idDispositiu, "nomDispositiu": nomDispositiu, "dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg})
                         else: # s'ha començat i acabat de regar
                             dataHoraIniciReg = dataHoraLastRegDisp
                             dataHoraFiReg = dades_lastlastReg[0][1]
-                            dades_formatejades.append({"idDispositiu": idDispositiu, "dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg})
+                            dades_formatejades.append({"idDispositiu": idDispositiu, "nomDispositiu": nomDispositiu, "dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg})
                     
                 return jsonify({'success': True, 'dades': dades_formatejades})                
             
