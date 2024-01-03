@@ -88,6 +88,7 @@ export interface IData {
   success: boolean,
   dades: Array<{
     idDispositiu: number
+    nomDispositiu: string
     dataHora: string
     dadaHum: number
     dadaTemp: number

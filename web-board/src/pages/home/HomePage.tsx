@@ -2,22 +2,23 @@ import { useState, useEffect } from 'react';
 import LastInfo from "../data/components/LastInfo"
 import CurrentParameters from "../parameters/components/CurrentParameters"
 import './HomePage.css'
-import { getUserDevices, getLastWaterInfo } from "../../utils/api";
-import { IUserDevices, ILastInfo } from '../../utils/interfaces';
+import { getLastMeasure, getLastWaterInfo } from "../../utils/api";
+import { ILastInfo, IData } from '../../utils/interfaces';
 import { useUser } from '../../context/UserContext';
+import LastMeasure from './components/LastMeasure';
 
 
 export function HomePage() {
   const { usernameId } = useUser();
-  const [UserDevices, setUserDevices] = useState<IUserDevices>();
+  const [UserMeasures, setUserMeasures] = useState<IData>();
   const [lastInfo, setLastInfo] = useState<ILastInfo>();
 
 
   useEffect(() => {
     if (usernameId != null){
-      getUserDevices(usernameId)
+      getLastMeasure(usernameId)
       .then((response) => {
-        setUserDevices(response)
+        setUserMeasures(response)
         getLastWaterInfo(usernameId)
         .then((response) => {
             setLastInfo(response)
@@ -37,16 +38,19 @@ export function HomePage() {
 
   return (
     <>           
-    <div className="page-container">
+    <div className="page-box home">
       <div className="column">
-        <CurrentParameters />
+        {/* <CurrentParameters /> */}
+        <h2>Últimes mesures</h2>
+        {UserMeasures?.dades.map((mesura) => (
+          <LastMeasure key={mesura.idDispositiu} nomDispositiu={mesura.nomDispositiu} dadaHum={mesura.dadaHum} dadaTemp={mesura.dadaTemp} dataHora={mesura.dataHora}/>
+        ))}
       </div>
       <div className="column">
-      <h2>Informació dels últims regs</h2>
+      <h2>Últims regs</h2>
       {lastInfo?.dades.map((reg) => (
         <LastInfo key={reg.idDispositiu} deviceId={reg.idDispositiu} finalData={reg.dataHoraFi} startingData={reg.dataHoraInici}/>
           ))}
-
       </div>
     </div>
     </>

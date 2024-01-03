@@ -68,6 +68,20 @@ export function getLastWaterInfo (usernameId: string): Promise<ILastInfo> {
     })
 }
 
+export function getLastMeasure (usernameId: string): Promise<IData> {
+    return fetch(`${ENDPOINT}/obtenirUltimaDadaDispositiu?idUsuari=${usernameId}`, {
+        method: 'GET',
+        headers: {
+            "Content-type": "application/json"
+        },
+    }).then(res => {
+        if (!res.ok) throw new Error('Response of get last water info is not OK')
+        return res.json()
+    }).then( res => {
+        return res 
+    })
+}
+
 export function getUserDevices (usernameId: string): Promise<IUserDevices> {
     return fetch(`${ENDPOINT}/obtenirDispositius?idUsuari=${usernameId}`, {
         method: 'GET',

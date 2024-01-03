@@ -8,6 +8,8 @@ import { getDeviceData, insertThreshold } from '../../../utils/api';
 import { Link } from "react-router-dom";
 import { convertDate } from '../../../utils/functions';
 
+import HumidityChart from './MoistureGraph';
+
 
 
 
@@ -59,12 +61,18 @@ const DataTable =  (props: {deviceId: number | undefined}) => {
     setFinalDate(formattedFinalDate);
   }
 
+  const data = [
+    // { date: '2024-01-01T12:00:00', humidity: 50 },
+    // { date: '2024-01-01T13:00:00', humidity: 60 },
+    { date: '0', humidity: 50 },
+    { date: '1', humidity: 60 }
+  ];
+
   
 
 
 useEffect(() => {
   if (props.deviceId != undefined){
-    // TO-DO: COnfirmar que no cal userId
     getDeviceData(props.deviceId, StartDate, FinalDate)
     .then((response) => {
         setData(response)
@@ -114,6 +122,8 @@ useEffect(() => {
     </table> 
     </div>
     </div>
+    <h3>Gràfica d'humitat</h3>
+      <HumidityChart dataInfo={data} />
     </>
   )
 }
