@@ -9,6 +9,8 @@ import { Link } from "react-router-dom";
 import { convertDate } from '../../../utils/functions';
 
 import HumidityChart from './MoistureGraph';
+import moment from 'moment';
+
 
 
 
@@ -61,9 +63,21 @@ const DataTable =  (props: {deviceId: number | undefined}) => {
     setFinalDate(formattedFinalDate);
   }
 
+  const extractHumidityData = (): Array<{ date: string; humidity: number }> => {
+    if (!Data || !Data.dades) {
+      return [];
+    }
+
+    return Data.dades.map((element) => ({
+      date: moment(element.dataHora, 'DD-MM-YYYY HH:mm:ss').format('MMM D, HH:mm:ss'),
+      humidity: element.dadaHum,
+    }));
+  };
+
+
   const data = [
-    // { date: '2024-01-01T12:00:00', humidity: 50 },
-    // { date: '2024-01-01T13:00:00', humidity: 60 },
+    // { date: new Date("2023-07-21"), humidity: 50 },
+    // { date: new Date("2023-07-22"), humidity: 60 }
     { date: '0', humidity: 50 },
     { date: '1', humidity: 60 }
   ];
@@ -123,7 +137,7 @@ useEffect(() => {
     </div>
     </div>
     <h3>Gràfica d'humitat</h3>
-      <HumidityChart dataInfo={data} />
+      <HumidityChart dataInfo={extractHumidityData()} />
     </>
   )
 }
