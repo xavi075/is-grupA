@@ -35,20 +35,20 @@ db.conecta()
 # amb la forma següent: {'idDispositiu': (int), 'llindarMinimReg': (decimal), 'llindarMaximReg': (decimal)}
 llindarsModificats = []
 
-def __posicio_llindarDispositiu(idDispositiu):
+def __posicio_llindarDispositiu(idHardcode):
     """
     Per saber la posició on es troba la modificació del llindar d'un dispositiu de la llista 
     llindarsModificats.  
 
     Args:
-        idDispositiu (int): identificador del dispositiu del qual es vol saber els llindars.
+        idHardcode (str): identificador del dispositiu del qual es vol saber els llindars.
 
     Returns:
         int: Retorna la posició on es troba la modificació del llindar d'un dispositiu de la llista 
             llindarsModificats. Si no troba cap modificació de llindars pel dispositiu, retorna -1.  
     """
     for i, dict in enumerate(llindarsModificats):
-        if dict['idDispositiu'] == idDispositiu:
+        if dict['idHardcode'] == idHardcode:
             return i
 
     else:
@@ -558,27 +558,41 @@ def modificaLLindars():
             return jsonify({'success': False, 'error': f"Camp 'llindarMaximReg' no especificat en el JSON"}), 400
         
         else:
-            db.començaTransaccio()
-            try:
-                db.update('dispositius', {'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax}, "id = " + str(idDispositiu))
+            
+            try: 
+                params = (idDispositiu, )
+                query = """SELECT idHardcode 
+                    FROM dispositius 
+                    WHERE id = %s"""
+                dades_dispositiu = db.executaQuery(query, params)
 
             except Exception as e:
-                db.rollback()
-                return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
+                return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
             
-            else:
-                db.commit()
+            else:    
+                idHardcode = dades_dispositiu[0][0]
                 
-                posLlindarDispo = __posicio_llindarDispositiu(idDispositiu)
-                if posLlindarDispo != -1: # el dispositiu té un llindar modificat guardat
-                    llindarsModificats.pop(posLlindarDispo)
+                db.començaTransaccio()
+                try:
+                    db.update('dispositius', {'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax}, "id = " + str(idDispositiu))
+
+                except Exception as e:
+                    db.rollback()
+                    return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
                 
-                # en aquest punt sabem que no es troba cap llindar del dispositiu guardat
-                llindarsModificats.append({'idDispositiu': idDispositiu, \
-                                           'llindarMinimReg': llindarMin, \
-                                            'llindarMaximReg': llindarMax})
-                
-                return jsonify({'success': True})
+                else:
+                    db.commit()
+                    
+                    posLlindarDispo = __posicio_llindarDispositiu(idHardcode)
+                    if posLlindarDispo != -1: # el dispositiu té un llindar modificat guardat
+                        llindarsModificats.pop(posLlindarDispo)
+                    
+                    # en aquest punt sabem que no es troba cap llindar del dispositiu guardat
+                    llindarsModificats.append({'idHardcode': idHardcode, \
+                                            'llindarMinimReg': llindarMin, \
+                                                'llindarMaximReg': llindarMax})
+                    
+                    return jsonify({'success': True})
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -1191,10 +1205,10 @@ def obtenirModificacionsLlindars():
     Si es demana d'un dispositiu, com que ja s'ha comunicat el canvi en el llindar, es borra de la llista.
     """
     try:
-        idDispositiu = request.args.get('idDispositiu')
-        if idDispositiu:
-            idDispositiu_int = int(idDispositiu)
-            posLlindarDispo = __posicio_llindarDispositiu(idDispositiu_int)
+        idHardcode = request.args.get('idHardcode')
+                
+        if idHardcode:
+            posLlindarDispo = __posicio_llindarDispositiu(idHardcode)
             if posLlindarDispo == -1: # el dispositiu no té un llindar modificat guardat
                 return jsonify({'success': True, 'dades': []})
             else:
