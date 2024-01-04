@@ -69,34 +69,24 @@ const DataTable =  (props: {deviceId: number | undefined}) => {
     }
 
     return Data.dades.map((element) => ({
-      date: moment(element.dataHora, 'DD-MM-YYYY HH:mm:ss').format('MMM D, HH:mm:ss'),
+      date: moment(element.dataHora, 'ddd, DD MMM YYYY HH:mm:ss [GMT]').format('MMM D, HH:mm:ss'),
       humidity: element.dadaHum,
     }));
   };
 
-
-  const data = [
-    // { date: new Date("2023-07-21"), humidity: 50 },
-    // { date: new Date("2023-07-22"), humidity: 60 }
-    { date: '0', humidity: 50 },
-    { date: '1', humidity: 60 }
-  ];
-
   
-
-
 useEffect(() => {
   if (props.deviceId != undefined){
     getDeviceData(props.deviceId, StartDate, FinalDate)
     .then((response) => {
         setData(response)
+        console.log(Data)
     })
     .catch((error) => {
         console.error('Error when user devices: ', error);
     });
   }
   }, [props.deviceId, ContentChanged, StartDate])
-  // TO-DO: Canviar startdate per un estat de dates canviades?
 
   return (
     <>

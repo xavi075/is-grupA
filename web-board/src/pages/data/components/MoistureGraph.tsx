@@ -28,7 +28,7 @@ interface HumidityChartProps {
 
 const HumidityChart: React.FC<HumidityChartProps> = ({ dataInfo }) => {
   const chartData = {
-    labels: dataInfo.map((entry) => entry.date),
+    labels: dataInfo.reverse().map((entry) => entry.date),
     datasets: [
       {
         label: 'Humitat (%)',
@@ -40,11 +40,12 @@ const HumidityChart: React.FC<HumidityChartProps> = ({ dataInfo }) => {
     ],
   };
 
+  console.log(dataInfo)
+
   const options = {
     scales: {
       x: {
-        type: 'category' as const,
-        labels: dataInfo.map((entry) => entry.date),
+        labels: dataInfo.map((entry) => entry.date.toString()),
       },
       y: {
         beginAtZero: true,
