@@ -8,7 +8,8 @@ import { getDeviceData, insertThreshold } from '../../../utils/api';
 import { Link } from "react-router-dom";
 import { convertDate } from '../../../utils/functions';
 
-import HumidityChart from './MoistureGraph';
+// import HumidityChart from './MoistureGraph';
+import { HumidityChart, TemperatureChart,  } from './MoistureGraph';
 import moment from 'moment';
 
 
@@ -63,7 +64,7 @@ const DataTable =  (props: {deviceId: number | undefined}) => {
     setFinalDate(formattedFinalDate);
   }
 
-  const extractHumidityData = (): Array<{ date: string; humidity: number }> => {
+  const extractHumidityData = (): Array<{ date: string; humidity: number, temperature: number }> => {
     if (!Data || !Data.dades) {
       return [];
     }
@@ -71,6 +72,7 @@ const DataTable =  (props: {deviceId: number | undefined}) => {
     return Data.dades.map((element) => ({
       date: moment(element.dataHora, 'ddd, DD MMM YYYY HH:mm:ss [GMT]').format('MMM D, HH:mm:ss'),
       humidity: element.dadaHum,
+      temperature: element.dadaTemp
     }));
   };
 
@@ -126,8 +128,10 @@ useEffect(() => {
     </table> 
     </div>
     </div>
-    <h3>Gràfica d'humitat</h3>
+    <h3>Gràfica d'humitat i temperatura</h3>
       <HumidityChart dataInfo={extractHumidityData()} />
+      {/* <TemperatureChart dataInfo={extractHumidityData()} /> */}
+
     </>
   )
 }
