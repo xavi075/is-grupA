@@ -724,6 +724,40 @@ def obtenirDispositiusDesassignats():
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
 
+@app.route('/comprovacioDispositiuInserit', methods = ['GET'])
+def comprovacioDispositiuInserit():
+    """
+    Endpoint de Flask per comprovar si un dispositiu ha sigut inserit a la base de dades i està assignat.
+    """
+    try:
+        idHardcode = request.args.get('idHardcode')
+        
+        if idHardcode is None:
+            return jsonify({'success': False, 'error': f"'idHardcode' no especificat"}), 400
+        
+        try: 
+            params = (idHardcode, )
+            query = """SELECT idUsuariPropietari 
+                FROM dispositius 
+                WHERE idHardcode = %s"""
+            dades_dispositiu = db.executaQuery(query, params)
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+        
+        else:  
+            if(len(dades_dispositiu)): # el dispositiu està a la base de dades
+                idUsuariPropietari = dades_dispositiu[0][0]
+                if(idUsuariPropietari):
+                    return jsonify({'success': True, 'dispositiuTrobat': True, "assignat": True})
+                else:
+                    return jsonify({'success': True, 'dispositiuTrobat': True, "assignat": False})
+            else: # el dispositiu no està a la base de dades
+                return jsonify({'success': True, 'dispositiuTrobat': False, "assignat": False})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+    
 @app.route('/obtenirDadesDispositius', methods = ['GET'])
 def obtenirDadesDispositius():
     """
