@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { format, startOfDay, subMonths, subWeeks } from 'date-fns';
-import { useUser } from '../../../context/UserContext';
+// import { useUser } from '../../../context/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import "./dataTable.css";
-import { IData } from '../../../utils/interfaces';
-import { getDeviceData, insertThreshold } from '../../../utils/api';
+import { IData, IWaterChanges } from '../../../utils/interfaces';
+import { getDeviceData, getWaterChanges } from '../../../utils/api';
 import { Link } from "react-router-dom";
 import { convertDate } from '../../../utils/functions';
 
 // import HumidityChart from './MoistureGraph';
-import { HumidityChart, TemperatureChart,  } from './MoistureGraph';
+import { HumidityChart } from './MoistureGraph';
 import moment from 'moment';
 
 
@@ -18,11 +18,12 @@ import moment from 'moment';
 
 const DataTable =  (props: {deviceId: number | undefined}) => {
 //   const { usernameId } = useUser();
-  const [ContentChanged, setContentChanged] = useState(false);
+  // const [ContentChanged, setContentChanged] = useState(false);
 
   const [StartDate, setStartDate] = useState("");
   const [FinalDate, setFinalDate] = useState("");
   const [Data, setData] = useState<IData>();
+  const [WaterChanges, setWaterChanges] = useState<IWaterChanges>();
 
   
   const handleAllData = () => {
@@ -75,26 +76,32 @@ const DataTable =  (props: {deviceId: number | undefined}) => {
       temperature: element.dadaTemp
     }));
   };
-
   
 useEffect(() => {
   if (props.deviceId != undefined){
     getDeviceData(props.deviceId, StartDate, FinalDate)
     .then((response) => {
         setData(response)
-        console.log(Data)
+        if (props.deviceId){
+          getWaterChanges(props.deviceId, StartDate, FinalDate)
+          .then((response) => {
+            setWaterChanges(response)
+        })
+        .catch((error) => {
+            console.error('Error when Water changes: ', error);
+        });
+        }
     })
     .catch((error) => {
-        console.error('Error when user devices: ', error);
+        console.error('Error when device data: ', error);
     });
   }
-  }, [props.deviceId, ContentChanged, StartDate])
+  }, [props.deviceId, StartDate])
 
   return (
     <>
+    
     <div className='data-table-container'>
-    <h3>Registre de dades</h3>
-    {/* TO-DO: Botons amb handle que modifiquen states */}
     <Link className="date-change-link" to="#" onClick={handleAllData}>
       Totes les dades
     </Link>
@@ -107,6 +114,7 @@ useEffect(() => {
     <Link className="date-change-link" to="#" onClick={handleToday}>
       Avui
     </Link>
+    <h3><FontAwesomeIcon icon="table-list" style={{ color: "#007ABF" }} size='lg' /> Registre de dades</h3>
     <div className='table-scroll-container'>
     <table className='table-data'>
       <thead>
@@ -127,11 +135,33 @@ useEffect(() => {
       </tbody>
     </table> 
     </div>
+    {Data?.dades.length === 0 && <p>Encara no hi ha dades per aquest dispositiu</p>}
     </div>
-    <h3>Gràfica d'humitat i temperatura</h3>
-      <HumidityChart dataInfo={extractHumidityData()} />
-      {/* <TemperatureChart dataInfo={extractHumidityData()} /> */}
+      <h3><FontAwesomeIcon icon="chart-line" style={{ color: "#007ABF" }} size='lg'/> Gràfica d'humitat i temperatura</h3>
+      {Data?.dades.length === 0 ? <p>No hi ha dades per mostrar a la gràfica</p>:
+        <HumidityChart dataInfo={extractHumidityData()} />
+      }
 
+      <h3><FontAwesomeIcon icon="repeat" style={{ color: "#007ABF" }} size='lg' /> Canvis en el reg</h3>
+    <div className='table-scroll-container'>
+    <table className='table-data'>
+      <thead>
+          <tr>
+              <th>Data</th>
+              <th>Estat</th>
+          </tr>
+      </thead>
+      <tbody>
+        {WaterChanges?.dades.reverse().map((mostra) => (
+          <tr>
+            <td>{convertDate(mostra.dataHora)}</td>
+            <td>{!mostra.estatReg ? "Inici de reg": "FInal de reg"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table> 
+    </div>
+    {WaterChanges?.dades.length === 0 && <p>Encara no hi ha dades del reg per aquest dispositiu</p>}
     </>
   )
 }

@@ -1,4 +1,4 @@
-import { ILogged, ILastInfo, IUserDevices, IRegister, IData, IAvailableDevices } from "./interfaces";
+import { ILogged, ILastInfo, IUserDevices, IRegister, IData, IAvailableDevices, IWaterChanges } from "./interfaces";
 
 const ENDPOINT = 'http://127.0.0.1:5000';
 
@@ -179,14 +179,12 @@ export function getDeviceData (deviceId: number, startDate:string, finalDate:str
           "Content-type": "application/json"
       },
     }).then(res => {
-      console.log(res)
       if (!res.ok) throw new Error('Response is not OK')
       return res.json()
     }).then( res => {
       return res 
     })
   } else {
-    console.log(startDate)
     return fetch(`${ENDPOINT}/obtenirDadesDispositius?idDispositiu=${deviceId}&dataInici=${startDate}&dataFi=${finalDate}`, {
       method: 'GET',
       headers: {
@@ -197,6 +195,35 @@ export function getDeviceData (deviceId: number, startDate:string, finalDate:str
       if (!res.ok) throw new Error('Response is not OK')
       return res.json()
   }).then( res => {
+      return res 
+  })
+  }
+}
+
+export function getWaterChanges (deviceId: number, startDate:string, finalDate:string): Promise<IWaterChanges> {
+
+  if (startDate === "" || finalDate === ""){
+    return fetch(`${ENDPOINT}/obtenirCanvisReg?idDispositiu=${deviceId}`, {
+      method: 'GET',
+      headers: {
+        "Content-type": "application/json"
+      },
+    }).then(res => {
+      if (!res.ok) throw new Error('Response is not OK')
+      return res.json()
+    }).then( res => {
+      return res 
+    })
+  } else {
+    return fetch(`${ENDPOINT}/obtenirCanvisReg?idDispositiu=${deviceId}&dataInici=${startDate}&dataFi=${finalDate}`, {
+      method: 'GET',
+      headers: {
+        "Content-type": "application/json"
+      },
+    }).then(res => {
+      if (!res.ok) throw new Error('Response is not OK')
+      return res.json()
+    }).then( res => {
       return res 
   })
   }

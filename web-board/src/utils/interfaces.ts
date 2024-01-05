@@ -94,6 +94,14 @@ export interface IData {
     dataHora: string
     dadaHum: number
     dadaTemp: number
-    // TO-DO: Confirmar nom de dada temp
+  }>
+}
+
+export interface IWaterChanges {
+  success: boolean,
+  dades: Array<{
+    idDispositiu: number
+    dataHora: string
+    estatReg: boolean
   }>
 }

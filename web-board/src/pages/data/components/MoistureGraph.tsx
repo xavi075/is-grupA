@@ -69,38 +69,3 @@ export const HumidityChart: React.FC<HumidityChartProps> = ({ dataInfo }) => {
 
   return <Line data={chartData} options={options} />;
 };
-
-export const TemperatureChart: React.FC<HumidityChartProps> = ({ dataInfo }) => {
-  const chartData = {
-    labels: dataInfo.reverse().map((entry) => entry.date),
-    datasets: [
-      {
-        label: 'Temperatura (ºC)',
-        data: dataInfo.map((entry) => ({
-          x: entry.date,
-          y: entry.temperature,
-        })),
-        fill: false,
-        borderColor: 'rgba(75,192,192,1)',
-        backgroundColor: 'rgba(75,192,192,0.4)',
-      },
-    ],
-  };
-
-  const options = {
-    scales: {
-      x: {
-        labels: dataInfo.map((entry) => entry.date.toString()),
-      },
-      y:
-        {
-          beginAtZero: true,
-          max: 100,
-        },
-    },
-  };
-
-  return <Line data={chartData} options={options} />;
-};
-
-// export default HumidityChart;
