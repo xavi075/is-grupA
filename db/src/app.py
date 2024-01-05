@@ -380,8 +380,6 @@ def assignaDispositiuUsuari():
         idDispositiu = dades_json.get('idDispositiu')
         idUsuari = dades_json.get('idUsuari')
         nomDispositiu = dades_json.get('nomDispositiu')
-        llindarMin = dades_json.get('llindarMinimReg')
-        llindarMax = dades_json.get('llindarMaximReg')
 
         if idDispositiu is None:
             return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
@@ -413,7 +411,7 @@ def assignaDispositiuUsuari():
                     else:
                         db.començaTransaccio()
                         try:
-                            db.update('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu, 'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax}, "id = " + str(idDispositiu))
+                            db.update('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu}, "id = " + str(idDispositiu))
 
                         except Exception as e:
                             db.rollback()
