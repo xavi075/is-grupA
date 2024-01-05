@@ -34,7 +34,7 @@ const ChangePassword =  () => {
         })
         .catch((error) => {
           setIncorrectPwd(true)
-          console.error('Incorrect password: ', error); //DEMANAR FERRAN GESTIÓ D'ERRORS
+          console.error('Incorrect password: ', error);
         });
 
         setIncorrectPwd(false);
@@ -53,12 +53,12 @@ const ChangePassword =  () => {
       <Link className="change-password-link" to="#" onClick={toggleChangePwd}>{!ChangePwd? "Canviar contrasenya" : "Enrera"} {!ChangePwd? <FontAwesomeIcon icon="caret-right" style={{ color: "#007ABF" }} /> : <FontAwesomeIcon icon="caret-down" style={{ color: "#007ABF" }} />}</Link>
       {ChangePwd &&
         <div className="form-container password-container">
-          <Form className="custom-form" onSubmit={handleChangePwd}>
+          <Form className="password-form" onSubmit={handleChangePwd}>
           <h3>Canvia la contrasenya</h3>
           {IncorrectPwd && <span className='incorrect-message'>Contrasenyes buides o incorrectes</span>}
           <Form.Group controlId="formBasicUsername">
             <Form.Label className="custom-label"><FontAwesomeIcon icon="key" style={{ color: "#007ABF" }} /> Contrasenya actual </Form.Label>
-            <Form.Control className="custom-input" type="password" placeholder="Contrassenya actual" value={currentPwd} onChange={(e) => setCurrentPwd(e.target.value)} />
+            <Form.Control className="custom-input password-input" type="password" placeholder="Contrasenya actual" value={currentPwd} onChange={(e) => setCurrentPwd(e.target.value)} />
           </Form.Group>
 
           <Form.Group controlId="formBasicPassword">
