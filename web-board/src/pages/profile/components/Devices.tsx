@@ -112,6 +112,8 @@ const Devices =  () => {
             <div className="device-details">
               <strong className='dev-name'>{dispositiu.nomDispositiu}</strong> 
               <br />
+              <strong>Identificador:</strong> {dispositiu.idHardcode}
+              <br />
               <strong>Llindar mínim:</strong> {dispositiu.llindarMinimReg}%
               <br />
               <strong>Llindar màxim:</strong> {dispositiu.llindarMaximReg}%

@@ -71,6 +71,7 @@ export interface IUserDevices {
   success: boolean,
   dades: Array<{
     id: number
+    idHardcode: string
     nomDispositiu: string
     llindarMinimReg: number
     llindarMaximReg: number
