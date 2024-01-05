@@ -8,23 +8,16 @@ import { getDeviceData, getWaterChanges } from '../../../utils/api';
 import { Link } from "react-router-dom";
 import { convertDate } from '../../../utils/functions';
 
-// import HumidityChart from './MoistureGraph';
 import { HumidityChart } from './MoistureGraph';
 import moment from 'moment';
 
 
-
-
-
 const DataTable =  (props: {deviceId: number | undefined}) => {
-//   const { usernameId } = useUser();
-  // const [ContentChanged, setContentChanged] = useState(false);
 
   const [StartDate, setStartDate] = useState("");
   const [FinalDate, setFinalDate] = useState("");
   const [Data, setData] = useState<IData>();
   const [WaterChanges, setWaterChanges] = useState<IWaterChanges>();
-
   
   const handleAllData = () => {
     setStartDate("");
@@ -49,7 +42,6 @@ const DataTable =  (props: {deviceId: number | undefined}) => {
     const CurrentDate = new Date();
     const TodayDate = startOfDay(CurrentDate);
 
-    console.log(TodayDate)
 
     setDates(CurrentDate, TodayDate);
   };
@@ -58,8 +50,6 @@ const DataTable =  (props: {deviceId: number | undefined}) => {
     const formattedStartDate = format(startDate, 'yyyy-MM-dd HH:mm:ss');
     const formattedFinalDate = format(finalDate, 'yyyy-MM-dd HH:mm:ss');
 
-    console.log(formattedStartDate);
-    console.log(formattedFinalDate);
 
     setStartDate(formattedFinalDate);
     setFinalDate(formattedStartDate);
@@ -125,8 +115,8 @@ useEffect(() => {
           </tr>
       </thead>
       <tbody>
-        {Data?.dades.reverse().map((mostra) => (
-          <tr>
+        {Data?.dades.reverse().map((mostra, index) => (
+          <tr key={`Taula1${index}`}>
             <td>{convertDate(mostra.dataHora)}</td>
             <td>{mostra.dadaHum}</td>
             <td>{mostra.dadaTemp}</td>
@@ -152,8 +142,8 @@ useEffect(() => {
           </tr>
       </thead>
       <tbody>
-        {WaterChanges?.dades.reverse().map((mostra) => (
-          <tr>
+        {WaterChanges?.dades.reverse().map((mostra, index) => (
+          <tr key={`Taula2-${index}`}>
             <td>{convertDate(mostra.dataHora)}</td>
             <td>{!mostra.estatReg ? "Inici de reg": "FInal de reg"}</td>
           </tr>

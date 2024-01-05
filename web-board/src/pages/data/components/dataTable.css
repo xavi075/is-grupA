@@ -43,4 +43,9 @@
     /* border-collapse: collapse; */
     /* margin-right: 10px; */
   }
+
+  .date-change-link{
+    display: flex;
+    justify-content: center;
+  }
 }
