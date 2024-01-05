@@ -24,6 +24,10 @@
   color: #007ABF;
 }
 
+.device-box {
+  margin-bottom: 70px;;
+}
+
 .add-device-link {
   display: inline-block;
   margin-top: 30px;

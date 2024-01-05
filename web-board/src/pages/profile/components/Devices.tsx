@@ -39,9 +39,7 @@ const Devices =  () => {
   }
 
   const assignDevice = () => {
-    if (SelectedId){
-      console.log("Assigning device")
-      console.log(DeviceName)
+    if (SelectedId && DeviceName != ""){
       if (usernameId) {
         assignDeviceUser(SelectedId, usernameId, DeviceName)
         .then((response) => {
@@ -103,7 +101,7 @@ const Devices =  () => {
   }, [NewDevice])
 
   return(
-    <div className="account-box">
+    <div className="account-box device-box">
       <h2>Els meus dispositius</h2>
       <div className="device-list">
         {UserDevices?.dades.length == 0 && <p>No tens cap dispositiu assignat</p>}
