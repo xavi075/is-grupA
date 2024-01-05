@@ -6,13 +6,14 @@ import { useUser } from '../../../context/UserContext';
 import './LastInfo.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
-import { convertDate } from '../../../utils/functions';
+import { convertDate, timePassed } from '../../../utils/functions';
 
 
-const LastInfo = (props: {deviceId: number, finalData: string, startingData: string}) => {
+const LastInfo = (props: {deviceName: string, finalData: string, startingData: string}) => {
+  console.log(props.finalData, props.startingData)
   return (
     <div className="table-container">
-      <h3>Dispositiu {props.deviceId}</h3>
+      <h3>Dispositiu {props.deviceName}</h3>
       <table className='table-info'>
         <tbody>
           <tr>
@@ -32,7 +33,7 @@ const LastInfo = (props: {deviceId: number, finalData: string, startingData: str
             {(props.finalData == "")?
             <td>-</td>
             :
-            <td>TO-DO: Càlcul temps</td>
+            <td>{timePassed(props.startingData, props.finalData)}</td>
             }
           </tr>
         </tbody>

@@ -42,15 +42,18 @@ export function HomePage() {
       <div className="column">
         {/* <CurrentParameters /> */}
         <h2>Últimes mesures</h2>
-        {UserMeasures?.dades.map((mesura) => (
+        {UserMeasures?.dades.length === 0 ? <p>No hi ha mesures recents</p>:
+         UserMeasures?.dades.map((mesura) => (
           <LastMeasure key={mesura.idDispositiu} nomDispositiu={mesura.nomDispositiu} dadaHum={mesura.dadaHum} dadaTemp={mesura.dadaTemp} dataHora={mesura.dataHora}/>
         ))}
       </div>
       <div className="column">
       <h2>Últims regs</h2>
-      {lastInfo?.dades.map((reg) => (
-        <LastInfo key={reg.idDispositiu} deviceId={reg.idDispositiu} finalData={reg.dataHoraFi} startingData={reg.dataHoraInici}/>
-          ))}
+      {lastInfo?.dades[0].nomDispositiu === "" ?<p>No hi ha dades de reg a mostrar</p> :
+        lastInfo?.dades.map((reg) => (
+        <LastInfo key={reg.idDispositiu} deviceName={reg.nomDispositiu} finalData={reg.dataHoraFi} startingData={reg.dataHoraInici}/>
+          ))
+      }
       </div>
     </div>
     </>

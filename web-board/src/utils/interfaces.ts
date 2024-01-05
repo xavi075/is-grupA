@@ -62,6 +62,7 @@ export interface ILastInfo {
     dataHoraFi: string
     dataHoraInici: string
     idDispositiu: number
+    nomDispositiu: string
   }>,
   success: boolean,
 }

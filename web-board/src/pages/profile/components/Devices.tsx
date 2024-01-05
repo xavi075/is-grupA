@@ -106,6 +106,7 @@ const Devices =  () => {
     <div className="account-box">
       <h2>Els meus dispositius</h2>
       <div className="device-list">
+        {UserDevices?.dades.length == 0 && <p>No tens cap dispositiu assignat</p>}
         {UserDevices?.dades.map((dispositiu) => (
           <div key={`grup-${dispositiu.nomDispositiu}`} className="device-item">
             <div className="device-details">
@@ -151,6 +152,7 @@ const Devices =  () => {
         :
         <div>
       <div className="device-list">
+        {AvailableDevices?.dades.length == 0 && <p>No hi ha dispositius disponibles</p>}
         {AvailableDevices?.dades.map((dispositiu) => (
           <div key={`grup-${dispositiu.idDispositiu}`} className="device-item">
             <div className="device-details">

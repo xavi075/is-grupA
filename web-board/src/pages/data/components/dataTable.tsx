@@ -54,14 +54,14 @@ const DataTable =  (props: {deviceId: number | undefined}) => {
   };
 
   const setDates = (startDate: Date, finalDate: Date) => {
-    const formattedStartDate = format(startDate, 'dd-MM-yyyy HH:mm:ss');
-    const formattedFinalDate = format(finalDate, 'dd-MM-yyyy HH:mm:ss');
+    const formattedStartDate = format(startDate, 'yyyy-MM-dd HH:mm:ss');
+    const formattedFinalDate = format(finalDate, 'yyyy-MM-dd HH:mm:ss');
 
     console.log(formattedStartDate);
     console.log(formattedFinalDate);
 
-    setStartDate(formattedStartDate);
-    setFinalDate(formattedFinalDate);
+    setStartDate(formattedFinalDate);
+    setFinalDate(formattedStartDate);
   }
 
   const extractHumidityData = (): Array<{ date: string; humidity: number, temperature: number }> => {
