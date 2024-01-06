@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Form, Button } from 'react-bootstrap';
 import { useUser } from '../../../context/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { loginRequest, registerRequest } from '../../../utils/api';
 import { ILogged } from '../../../utils/interfaces';
 import './Login.css';
-
 
 const Login =  () => {
   const { setUserNameId, setLoggedIn } = useUser();
@@ -17,6 +16,7 @@ const Login =  () => {
   const [RegisterEmail, setRegisterEmail] = useState('');
   const [RegisterName, setRegisterName] = useState('');
   const [RegisterPassword, setRegisterPassword] = useState('');
+  const [IncorrectRegister, setIncorrectRegister] = useState(false);
 
 
   const handleLogin = (e: React.FormEvent<HTMLFormElement>) => {
@@ -26,7 +26,7 @@ const Login =  () => {
         .then((response) => {
           setLoginInfo(response);
           if (response?.success){
-            if (response.credencialsTrobades && response.idUsuari != null){
+            if (response.credencialsTrobades && response.idUsuari !== null){
               window.sessionStorage.setItem('usernameId', response.idUsuari.toString())
               setUserNameId(response.idUsuari.toString());
               setLoggedIn(!!response.idUsuari);
@@ -38,41 +38,33 @@ const Login =  () => {
         })
         .catch((error) => {
           console.error('Error login: ', error);
+          setIncorrectLogin(true)
         });
   };
 
   const handleRegister = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Previ a registre: ', RegisterEmail, RegisterName, RegisterPassword)
-    registerRequest(RegisterEmail, RegisterName, RegisterPassword)
-        .then((response) => {
-          console.log(response)
-          if (response?.success){
-            // if (response.credencialsTrobades && response.idUsuari != null){
-            //   window.sessionStorage.setItem('username', response.idUsuari.toString())
-            //   setUserNameId(response.idUsuari.toString());
-            //   setLoggedIn(!!response.idUsuari);
-            //   setIncorrectLogin(false);
-            // } else {
-            //   setIncorrectLogin(true)
-            // }
-            if (response.idUsuariInsertat != null){
-              console.log(response.idUsuariInsertat)
-              window.sessionStorage.setItem('usernameId', response.idUsuariInsertat.toString())
-              setUserNameId(response.idUsuariInsertat.toString());
-              setLoggedIn(!!response.idUsuariInsertat);
-              setIncorrectLogin(false);
-            }
-
+    if (RegisterEmail !== "" && RegisterName !== "" && RegisterPassword !== "") {
+      registerRequest(RegisterEmail, RegisterName, RegisterPassword)
+      .then((response) => {
+        if (response?.success){
+          if (response.idUsuariInsertat !== null){
+            console.log(response.idUsuariInsertat)
+            window.sessionStorage.setItem('usernameId', response.idUsuariInsertat.toString())
+            setUserNameId(response.idUsuariInsertat.toString());
+            setLoggedIn(!!response.idUsuariInsertat);
+            setIncorrectLogin(false);
+            setIncorrectRegister(false);
           }
-        })
-        .catch((error) => {
-          console.error('Error Register: ', error);
-        });
-    
-    // TO-DO: agafar usuari i password i enviar peticio POST register
-    // TO-DO: rebre resposta peticio
-    // TO-DO: login?
+        } else {
+          setIncorrectRegister(true);
+        }
+      })
+      .catch((error) => {
+        console.error('Error Register: ', error);
+        setIncorrectRegister(true);
+      }); 
+    }
   }
 
   const [expanded, setExpanded] = useState(true);
@@ -105,6 +97,7 @@ const Login =  () => {
         <div className="form-container login-container">
             <Form className="custom-form" onSubmit={handleRegister}>
             <h2>Registra un nou usuari</h2>
+            {IncorrectRegister && <span className='incorrect-message'>El correu electrònic ja es troba a la base de dades</span>}
             <Form.Group controlId="formBasicEmail">
               <Form.Label className="custom-label"> <FontAwesomeIcon icon="envelope" style={{ color: "#007ABF" }} /> Correu electrònic </Form.Label>
               <Form.Control className="custom-input" type="email" placeholder="exemple@exemple.com" value={RegisterEmail} onChange={(e) => setRegisterEmail(e.target.value)}/>
