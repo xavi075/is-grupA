@@ -27,6 +27,7 @@ volatile uint8_t lastMsgId; // variable per emmagatzemar l'últim identificador 
 String lastOutgoing; // variable per emmagatzemar l'últim missatge
 volatile bool lastMsgRespos_flag = true; // flag per indicar si l'últim missatge enviat s'ha respos
 const int intervalRepeticioMsg_s = 10; // interval de temps per repetir missatges 
+volatile int num_msgRep; // comptador dels cops que s'ha repetit l'últim missatge
 
 // flag per indicar que s'està comunicant amb el master i que no s'ha d'entrar en mode sleep
 volatile bool comunicacioMasterFlag = false; 
@@ -147,6 +148,7 @@ void sendMessage(String outgoing){
   lastMsgRespos_flag = false;
 
   // activem la repetició del missatge per si el master no responent
+  num_msgRep = 0;
   setup_tmr0(intervalRepeticioMsg_s, repetirMissatge);
 
   if (msgId < 255) msgId++;
@@ -157,6 +159,13 @@ void sendMessage(String outgoing){
 void repetirMissatge() {
   // comprovem si s'ha respos a l'últim missatge
   if (lastMsgRespos_flag) return;
+
+  // comprovem si el missatge s'ha repetit més de 5 cops, en aquest cas tanquem la comunicació amb el master
+  if (num_msgRep >= 5) {
+    acabaComunicacioMaster();
+    return;
+  }
+  else num_msgRep++;
 
   Serial.print("Sending packet: ");
   Serial.println(msgId);
