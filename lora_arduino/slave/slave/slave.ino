@@ -6,10 +6,27 @@
 #include "tmr0.h"
 #include "secure.h"
 
-uint8_t msgId = 0; // comptador dels missatges de sortida
-uint8_t localAddress[4] = {0xAA, 0x00, 0x00, 0x00}; // adreça del dispositiu
-uint8_t masterAddress[4] = {0x00, 0x00, 0x00, 0x00}; // adreça del dispositiu master
-int interval_s = 10; // interval de temps entre comunicacions amb master
+// Definició dels estats que pot tenir el slave
+enum estats_slave {
+  sleep,
+  wait_resp,
+  llegintDades,
+  wait_OK_comprovacioReg,
+  wait_OK_bombaON,
+  wait_OK_bombaOFF,
+  bombaEngegada
+};
+volatile estats_slave estat;
+
+const uint8_t localAddress[4] = {0xAA, 0x00, 0x00, 0x00}; // adreça del dispositiu
+const uint8_t masterAddress[4] = {0x00, 0x00, 0x00, 0x00}; // adreça del dispositiu master
+const int interval_s = 10; // interval de temps entre comunicacions amb master
+
+volatile uint8_t msgId = 0; // comptador dels missatges de sortida
+volatile uint8_t lastMsgId; // variable per emmagatzemar l'últim identificador de missatge enviat
+String lastOutgoing; // variable per emmagatzemar l'últim missatge
+volatile bool lastMsgRespos_flag = true; // flag per indicar si l'últim missatge enviat s'ha respos
+const int intervalRepeticioMsg_s = 10; // interval de temps per repetir missatges 
 
 // flag per indicar que s'està comunicant amb el master i que no s'ha d'entrar en mode sleep
 volatile bool comunicacioMasterFlag = false; 
@@ -18,8 +35,54 @@ volatile bool comunicacioMasterFlag = false;
 void iniciaComunicacioMaster() {
   comunicacioMasterFlag = true;
 
-  sendMessage("hello");
+  //sendMessage("hello");
+  sendMessage("?"); 
   LoRa.receive();
+}
+
+// per finalitzar la comunicació amb el master. Posa el dispositiu amb mode sleep
+// i reinicia el timer 0 per tal de que torni a començar la comunicació
+void acabaComunicacioMaster() {
+  comunicacioMasterFlag = false;
+  setup_tmr0(interval_s, iniciaComunicacioMaster);
+}
+
+// modifica els llindars de reg del dispositiu
+void canviaLlindars(float llindarMin, float llindarMax) {
+  // per fer
+}
+
+// inicia la lectura de dades d'humitat i de temperatura
+void iniciaLectura() {
+  // per fer
+}
+
+// envia les dades d'humitat i de temperatura especificades en el format que espera el master ("d-H:100T:40")
+void enviaDades(float humitat, float temperatura) {
+  String humitat_string = String(humitat);
+  String temperatura_string = String(temperatura);
+
+  sendMessage("d-H:" + humitat_string + "T:" + temperatura_string);
+}
+
+// comprova l'estat en el que es troba la bomba i retorna el valor adequat
+bool comprovaReg() {
+  // per fer
+}
+
+// envia l'estat del reg
+void enviaEstatReg(String estatReg) {
+  sendMessage("r-" + estatReg);
+}
+
+// engega la bomba
+void engegaBomba() {
+  // per fer
+}
+
+// para la bomba
+void paraBomba() {
+  // per fer
 }
 
 void setup() {
@@ -43,6 +106,9 @@ void setup() {
   // configurem el mode de baix consum
   set_sleep_mode(SLEEP_MODE_IDLE);
   sleep_enable();
+
+  // iniciem l'estat del slave a sleep
+  estat = sleep;
   
   pinMode(4,OUTPUT);
   digitalWrite(4,HIGH);
@@ -75,8 +141,44 @@ void sendMessage(String outgoing){
   LoRa.print(outgoing);
   LoRa.endPacket();
 
+  // guardem el missatge i el msgId enviat i marquem que no s'ha respòs
+  lastOutgoing = outgoing;
+  lastMsgId = msgId;
+  lastMsgRespos_flag = false;
+
+  // activem la repetició del missatge per si el master no responent
+  setup_tmr0(intervalRepeticioMsg_s, repetirMissatge);
+
   if (msgId < 255) msgId++;
   else msgId = 0;
+}
+
+// per tornar a enviar l'últim missatge enviat
+void repetirMissatge() {
+  // comprovem si s'ha respos a l'últim missatge
+  if (lastMsgRespos_flag) return;
+
+  Serial.print("Sending packet: ");
+  Serial.println(msgId);
+
+  // send packet
+  LoRa.beginPacket();
+  LoRa.write(masterAddress, 4);
+  LoRa.write(localAddress, 4);
+  LoRa.write(msgId);
+  
+  //uint8_t crc[4] = {0x00, 0x00, 0x00, 0x00}; // substituir per calcul de CRC
+  uint8_t crc[4];
+  calcularCRC(crc, lastOutgoing.c_str(), lastOutgoing.length());
+  LoRa.write(crc, 4);
+
+  LoRa.write(lastOutgoing.length());
+
+  LoRa.print(lastOutgoing);
+  LoRa.endPacket();
+
+  // activem la repetició del missatge per si el master continua sense respondre
+  setup_tmr0(intervalRepeticioMsg_s, repetirMissatge);
 }
 
 // Per llegir un missatge LoRa. S'executa quan es rep un missatge per LoRa
@@ -96,6 +198,17 @@ void onReceive(int packetSize){
     //comprovem si som el receptor del paquet
     if (memcmp(recipient, localAddress, 4) != 0) {
       Serial.println("Aquest missatge no és per mi.");
+      return;
+    }
+    
+    // comprovem si s'està responent a l'últim missatge enviat
+    if (incomingMsgId == lastMsgId) { // resposta a l'últim missatge rebuda
+      lastMsgRespos_flag = true;
+      // aturem l'enviament del repetiment l'últim missatge
+      stop_tmr0();
+    }
+    else {      
+      Serial.println("El missatge no es correspon a l'últim missatge enviat");
       return;
     }
 
