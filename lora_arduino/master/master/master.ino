@@ -5,6 +5,17 @@
 
 uint8_t localAddress[4] = {0x00, 0x00, 0x00, 0x00}; // adreça del dispositiu master
 
+// printa una adreça en hexadecimal pel port sèrie. Facilita la comunicació pel port sèrie
+void printaAddress(uint8_t address[4]) {
+  for (int i = 0; i < 4; i++) {
+    // ens assegurem que sempre es printin dos dígits hexadeximals
+    if (address[i] < 0x10) {
+      Serial.print("0");
+    }
+    Serial.print(address[i], HEX);
+  }
+}
+
 void setup() {
   Serial.begin(9600);
   while (!Serial);
@@ -92,6 +103,77 @@ void onReceive(int packetSize){
       sendMessage(senderAddress, incomingMsgId, "Bye");
       Serial.println("Sending packet: Bye");
     }
+
+
+    // si el missatge és "?" demanem si hi ha algun canvi de paràmetres
+    if (strcmp(incoming.c_str(), "?") == 0)  {
+      // enviem missatge pel port sèrie
+      Serial.print("?-");
+      printaAddress(senderAddress);
+      Serial.println();
+
+      // llegim la resposta
+      String resposta = llegeixPortSerie();
+    
+      // retornem la resposta al slave. La resposta pot ser "NO", "NOASS" o semblant a "CP-min:45.0max:70.6"
+      sendMesssage(senderAddress, incomingMsgId, resposta.c_str());
+      Serial.print("Sending packet: ");
+      Serial.println(resposta);
+    }
+
+
+    // si el missatge comença per "d-", significa que ens està enviant les dades d'humitat i temperatura
+    if (incoming.startsWith("d-"))  {
+      // trobem la posició de "H:" i de "T:"
+      int posH = incoming.indexOf("H:");
+      int posT = incoming.indexOf("T:"); 
+      
+      // comprova si el format és l'esperat
+      if (posH == -1 || posT == -1) return;
+
+      // enviem missatge pel port sèrie
+      Serial.print("d-");
+      printaAddress(senderAddress);
+      Serial.print("-");
+      Serial.print(incoming.substring(posH));
+      Serial.println();
+
+      // llegim la resposta
+      String resposta = llegeixPortSerie();
+      
+      // si ha anat bé, informem al slave enviant "OK"
+      if (strcmp(resposta.c_str(), "OK") == 0) {
+        sendMesssage(senderAddress, incomingMsgId, resposta.c_str());
+        Serial.print("Sending packet: ");
+        Serial.println(resposta);
+      }
+    }
+
+    // si el missatge comença per -r, signigica que està enviant l'estat del reg
+    if (incoming.startsWith("r-"))  {
+      // obtenim la subcadena posterior a "r-""
+      String estat = incoming.substring(2);
+
+      // enviem missatge pel port sèrie
+      Serial.print("r-");
+      printaAddress(senderAddress);
+      Serial.print("-");
+      Serial.print(estat);
+      Serial.println();
+
+      // llegim la resposta
+      String resposta = llegeixPortSerie();
+      Serial.print("RESPOSTA: ");
+      Serial.println(resposta);
+
+      // si ha anat bé, informem al slave enviant "OK"
+      if (strcmp(resposta.c_str(), "OK") == 0) {
+        sendMesssage(senderAddress, incomingMsgId, resposta.c_str());
+        Serial.print("Sending packet: ");
+        Serial.println(resposta);
+      }
+    }
+
 
     LoRa.receive();
     LoRa.onReceive(onReceive);
