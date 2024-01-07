@@ -35,4 +35,6 @@ RUN service mysql start && \
 
 WORKDIR /home/is-grupA/db/src
 
-RUN python3 app.py &
+CMD ["service", "mysql start"]
+CMD ["python3", "app.py"]
+

@@ -1,0 +1,34 @@
+version: '3.3'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mysql
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_USER: arnau
+      MYSQL_PASSWORD: isgrupA
+      MYSQL_DB: integracioSistemes
+    command: sh -c "service mysql stop && usermod -d /var/lib/mysql/ mysql && service mysql start && cd /home/is-grupA/db/src && python3 app.py"
+    restart: on-failure
+
+  mysql:
+    image: mysql:5.7
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
+      MYSQL_DATABASE: integracioSistemes
+      MYSQL_USER: arnau
+      MYSQL_PASSWORD: isgrupA
+    volumes:
+      - type: volume
+        source: mysql-data
+        target: /home/arnau/database
+    
+
+volumes:
+  mysql-data:
