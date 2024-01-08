@@ -2,9 +2,7 @@ version: '3.3'
 
 services:
   webapi:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: isgrupa
     ports:
       - "5000:5000"
     depends_on:
@@ -33,7 +31,7 @@ services:
     image: isgrupa
     command: sh -c "cd /home/web/is-grupA/web-board && node -v && npm -v && npm install && npm start"
     ports:
-      - "3000:3000"
+      - "5001:3000"
     depends_on:
       - webapi
 
