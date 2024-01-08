@@ -7,9 +7,13 @@ COPY --chmod=777 ./scripts/* /usr/local/bin/
 # instal·lar llibreries necessaries per executar la api de la base de dades
 RUN installDBlibraries.sh
 
-EXPOSE 5000
+EXPOSE 5000 3000
 
 WORKDIR /home
+
+RUN mkdir -p /home/basedades
+
+WORKDIR /home/basedades
 
 RUN git clone https://github.com/xavi075/is-grupA.git -b apiDB
 
@@ -33,8 +37,16 @@ RUN service mysql start && \
     mysql -u arnau -p${MYSQL_ARNAU_PASSWORD} -e "SET autocommit = 0;" && \
     mysql -u arnau -p${MYSQL_ARNAU_PASSWORD} --database=integracioSistemes < integracioSistemes.sql
 
-WORKDIR /home/is-grupA/db/src
+RUN mkdir -p /home/web
 
-CMD ["service", "mysql start"]
-CMD ["python3", "app.py"]
+WORKDIR /home/web
+
+RUN git clone https://github.com/xavi075/is-grupA.git -b apiWEB
+
+WORKDIR /home/web/is-grupA/web-board
+
+RUN installWEBlibraries.sh
+
+ENV NODE_PATH /root/.nvm/versions/node/v14.10.0/lib/node_modules
+ENV PATH /root/.nvm/versions/node/v14.10.0/bin:$PATH 
 
