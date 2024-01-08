@@ -2,6 +2,8 @@ FROM ubuntu:20.04
 
 USER root
 
+RUN apt update
+
 RUN apt install openssh-server -y
 
 RUN sed -E -i 's|^#?(PasswordAuthentication)\s.*|\1 no|' /etc/ssh/sshd_config && \
