@@ -3,8 +3,15 @@
 #include <avr/sleep.h>
 #include <avr/power.h>
 
-#include "tmr0.h"
+// per llegir el valor de la temperatura
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+#include "adc.h"
+#include "modulator.h"
 #include "secure.h"
+#include "tmr0.h"
+#include "tmr2.h"
 
 // Definició dels estats que pot tenir el slave
 enum estats_slave {
@@ -18,9 +25,12 @@ enum estats_slave {
 };
 volatile estats_slave estat;
 
-const uint8_t localAddress[4] = {0xAA, 0x00, 0x00, 0x00}; // adreça del dispositiu
-const uint8_t masterAddress[4] = {0x00, 0x00, 0x00, 0x00}; // adreça del dispositiu master
-const int interval_s = 10; // interval de temps entre comunicacions amb master
+uint8_t localAddress[4] = {0xAA, 0x00, 0x00, 0x00}; // adreça del dispositiu
+uint8_t masterAddress[4] = {0x00, 0x00, 0x00, 0x00}; // adreça del dispositiu master
+int interval_s = 10; // interval de temps entre comunicacions amb master
+
+const int num_comunicacions_llegirDades = 6; // variable per indicar cada quantes comunicacions amb el master es llegeixen dades
+int num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades; // comunicacions restants per a llegir dades
 
 volatile uint8_t msgId = 0; // comptador dels missatges de sortida
 volatile uint8_t lastMsgId; // variable per emmagatzemar l'últim identificador de missatge enviat
@@ -34,6 +44,15 @@ volatile bool comunicacioMasterFlag = false;
 
 volatile float llindarMinReg; // llindar a partir del qual es comença a regar
 volatile float llindarMaxReg; // llindar a partir del qual es para de regar
+
+const int num_mostresHumitat = 128; // nombre total de mostres d'humitat que es llegiran per cada lectura
+volatile int num_mostresHumitat_restants = num_mostresHumitat - 1; // per emmagatzemar el nombre de mostres d'humitat que queden per acabar la lectura
+volatile int contenidor_valorHumitat; // variable en la qual es sumaran totes les mostres d'humitat per a després realitzar la mitjana
+volatile bool dadesLlegidesFlag; // flag per indicar que s'han llegit totes les mostres d'humitat
+
+const int pin_temperatura = 14; // pin per on es llegeix la temperatura
+OneWire oneWire(pin_temperatura);
+DallasTemperature sensors(&oneWire);
 
 // printa l'estat actual. Únicament serveix per debugar
 void printaEstat() {
@@ -82,6 +101,8 @@ void iniciaComunicacioMaster() {
 // i reinicia el timer 0 per tal de que torni a començar la comunicació.
 // Canvia al estat sleep i desactiva el flag de comunicació amb el master
 void acabaComunicacioMaster() {
+  if (num_comunicacions_llegirDades_restants > 0) num_comunicacions_llegirDades_restants--;
+
   comunicacioMasterFlag = false;
   estat = sleep;
   setup_tmr0(interval_s, iniciaComunicacioMaster);
@@ -103,9 +124,20 @@ void canviaLlindars(float llindarMin, float llindarMax) {
   Serial.println(llindarMaxReg);
 }
 
-// inicia la lectura de dades d'humitat i de temperatura
+// inicia la lectura de dades d'humitat. Això implica engegar el modulator i les interrupcions del timer 2
 void iniciaLectura() {
-  // per fer
+  modulator_set(true);
+  tmr2_set(8);
+  start_ADC();
+
+  dadesLlegidesFlag = false;
+  num_mostresHumitat_restants = num_mostresHumitat - 1;
+}
+
+// atura la lectura de dades d'humitat. Això implica aturar el modulator i les interrupcions del timer 2
+void aturaLectura () {
+  modulator_set(false);
+  tmr2_set(0);
 }
 
 // envia les dades d'humitat i de temperatura especificades en el format que espera el master ("d-H:100T:40")
@@ -150,8 +182,16 @@ void setup() {
 
   delay(200);
 
-  // iniciem el el timer per a la comunicació amb el master 
+  // iniciem el el timer0 per a la comunicació amb el master 
   setup_tmr0(interval_s, iniciaComunicacioMaster);
+
+  // iniciem el modulator, el timer2 i l'ADC (utilitzats en la lectura de dades d'humitat)
+  modulator_init();
+  setup_tmr2(124, 8);
+  setup_ADC(1,5,16);
+
+  // per llegir la temperatura
+  sensors.begin();
 
   //register the receive callback
   LoRa.onReceive(onReceive);
@@ -176,6 +216,25 @@ void setup() {
 void loop() {
   if (!comunicacioMasterFlag) {
     sleep_mode();
+  }
+
+  if (estat == llegintDades) {
+    if (dadesLlegidesFlag) { // s'han acabat de llegir les dades
+      aturaLectura();
+      // càlcul del valor mitjà d'humitat
+      float avg_humitat = contenidor_valorHumitat / num_mostresHumitat;
+
+      // càlcul per obtenir l'humitat en percentatge
+      float valorHumitat = ((255 - avg_humitat)/200)*100;
+      Serial.println(valorHumitat);
+
+      // obtenim la temperatura
+      sensors.requestTemperatures();  // Solicitar la temperatura al sensor
+      float temperatura = sensors.getTempCByIndex(0);  // Obtener la temperatura en grados Celsius
+      Serial.println(temperatura);
+
+      acabaComunicacioMaster();
+    }
   }
 }
 
@@ -256,7 +315,6 @@ void repetirMissatge() {
 
 // Per llegir un missatge LoRa. S'executa quan es rep un missatge per LoRa
 void onReceive(int packetSize){
-  Serial.println("debug");
   if (packetSize) {
     
     // read packet header bytes
@@ -316,13 +374,21 @@ void onReceive(int packetSize){
         break;
 
       case wait_resp:
+        Serial.println(num_comunicacions_llegirDades_restants);
 
-
-        if (strcmp(incoming.c_str(), "NO") == 0)  {
+        if (strcmp(incoming.c_str(), "NOASS") == 0)  {
           acabaComunicacioMaster();
         }
-        else if (strcmp(incoming.c_str(), "NOASS") == 0)  {
-          acabaComunicacioMaster();
+        else if (strcmp(incoming.c_str(), "NO") == 0)  {
+          if (num_comunicacions_llegirDades_restants == 0) {
+            estat = llegintDades;
+            printaEstat();
+            num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades;
+            iniciaLectura();
+          }
+          else {
+            acabaComunicacioMaster();
+          }
         }
         else if (incoming.startsWith("CP-")) {
           // Obtenim el llidarMin i el llindarMax a modificar
@@ -332,7 +398,16 @@ void onReceive(int packetSize){
           float llindarMax = incoming.substring(posMax + 4).toFloat();  
 
           canviaLlindars(llindarMin, llindarMax);
-          acabaComunicacioMaster();
+          
+          if (num_comunicacions_llegirDades_restants == 0) {
+            estat = llegintDades;
+            printaEstat();
+            num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades;
+            iniciaLectura();
+          }
+          else {
+            acabaComunicacioMaster();
+          }
         }
         break;
 
@@ -346,3 +421,14 @@ void onReceive(int packetSize){
     LoRa.receive();
   }
 }
+
+// interrupció del timer 2 que serveix per llegir les mostres d'humitat
+ISR(TIMER2_COMPA_vect){
+    uint8_t value=read8_ADC();
+    start_ADC();
+    num_mostresHumitat_restants --;
+    contenidor_valorHumitat += value;
+    if (contenidor_valorHumitat == 0){ // ja s'han llegit totes les mostres que es volien
+        dadesLlegidesFlag = 1;
+    }
+}  
