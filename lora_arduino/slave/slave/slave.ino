@@ -29,7 +29,7 @@ uint8_t localAddress[4] = {0xAA, 0x00, 0x00, 0x00}; // adreça del dispositiu
 uint8_t masterAddress[4] = {0x00, 0x00, 0x00, 0x00}; // adreça del dispositiu master
 int interval_s = 10; // interval de temps entre comunicacions amb master
 
-const int num_comunicacions_llegirDades = 6; // variable per indicar cada quantes comunicacions amb el master es llegeixen dades
+const int num_comunicacions_llegirDades = 2; // variable per indicar cada quantes comunicacions amb el master es llegeixen dades
 int num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades; // comunicacions restants per a llegir dades
 
 volatile uint8_t msgId = 0; // comptador dels missatges de sortida
@@ -49,10 +49,15 @@ const int num_mostresHumitat = 128; // nombre total de mostres d'humitat que es 
 volatile int num_mostresHumitat_restants = num_mostresHumitat - 1; // per emmagatzemar el nombre de mostres d'humitat que queden per acabar la lectura
 volatile int contenidor_valorHumitat; // variable en la qual es sumaran totes les mostres d'humitat per a després realitzar la mitjana
 volatile bool dadesLlegidesFlag; // flag per indicar que s'han llegit totes les mostres d'humitat
+float valorHumitat; // variable per emmagatzemar el valor d'humitat llegit
 
 const int pin_temperatura = 14; // pin per on es llegeix la temperatura
 OneWire oneWire(pin_temperatura);
 DallasTemperature sensors(&oneWire);
+float valorTemperatura; // variable per emmagatzemar el valor de temperatura llegit
+
+const int pin_bomba = 6; // pin per activar i desactivar la bomba
+bool estatBomba;
 
 // printa l'estat actual. Únicament serveix per debugar
 void printaEstat() {
@@ -141,16 +146,11 @@ void aturaLectura () {
 }
 
 // envia les dades d'humitat i de temperatura especificades en el format que espera el master ("d-H:100T:40")
-void enviaDades(float humitat, float temperatura) {
-  String humitat_string = String(humitat);
-  String temperatura_string = String(temperatura);
+void enviaDades() {
+  String humitat_string = String(valorHumitat);
+  String temperatura_string = String(valorTemperatura);
 
   sendMessage("d-H:" + humitat_string + "T:" + temperatura_string);
-}
-
-// comprova l'estat en el que es troba la bomba i retorna el valor adequat
-bool comprovaReg() {
-  // per fer
 }
 
 // envia l'estat del reg
@@ -160,7 +160,7 @@ void enviaEstatReg(String estatReg) {
 
 // engega la bomba
 void engegaBomba() {
-  // per fer
+  digitalWrite(pin_bomba, LOW);
 }
 
 // para la bomba
@@ -208,6 +208,12 @@ void setup() {
   // inicialitzem els valors per defecte dels llindars de reg
   llindarMinReg = 50;
   llindarMaxReg = 75;
+
+  // inicialitzem el pin de la bomba com a sortida i activem el pin ENA (PC3 = A3/17)
+  pinMode(pin_bomba, OUTPUT);
+  pinMode(A3, OUTPUT);
+  digitalWrite(A3, HIGH);
+  estatBomba = false;
   
   pinMode(4,OUTPUT);
   digitalWrite(4,HIGH);
@@ -225,15 +231,21 @@ void loop() {
       float avg_humitat = contenidor_valorHumitat / num_mostresHumitat;
 
       // càlcul per obtenir l'humitat en percentatge
-      float valorHumitat = ((255 - avg_humitat)/200)*100;
+      valorHumitat = ((255 - avg_humitat)/255)*100;
       Serial.println(valorHumitat);
 
       // obtenim la temperatura
       sensors.requestTemperatures();  // Solicitar la temperatura al sensor
-      float temperatura = sensors.getTempCByIndex(0);  // Obtener la temperatura en grados Celsius
-      Serial.println(temperatura);
+      valorTemperatura = sensors.getTempCByIndex(0);  // Obtener la temperatura en grados Celsius
+      Serial.println(valorTemperatura);
 
-      acabaComunicacioMaster();
+      if (!estatBomba) { // la bomba està OFF
+        enviaDades(); // enviem els valors d'humitat llegits
+      }
+      
+      // modifiquem l'estat
+      estat = wait_OK_comprovacioReg;
+      printaEstat();
     }
   }
 }
@@ -411,6 +423,27 @@ void onReceive(int packetSize){
         }
         break;
 
+      case wait_OK_comprovacioReg:
+
+        if (strcmp(incoming.c_str(), "OK") == 0)  { // rebem la confirmació
+          
+          if (estatBomba) { // falta mirar llindars
+
+          }
+          else if (!estatBomba && valorHumitat > llindarMaxReg) {
+            enviaEstatReg("OFF");
+            estat = wait_OK_bombaOFF;
+            printaEstat();
+          }
+        }
+
+      case wait_OK_bombaOFF:
+
+        if (strcmp(incoming.c_str(), "OK") == 0)  { // rebem la confirmació
+          paraBomba();
+          acabaComunicacioMaster();
+        }
+
       default:
         Serial.println("Estat no reconegut");
         break;
@@ -428,7 +461,7 @@ ISR(TIMER2_COMPA_vect){
     start_ADC();
     num_mostresHumitat_restants --;
     contenidor_valorHumitat += value;
-    if (contenidor_valorHumitat == 0){ // ja s'han llegit totes les mostres que es volien
+    if (num_mostresHumitat_restants == 0){ // ja s'han llegit totes les mostres que es volien
         dadesLlegidesFlag = 1;
     }
 }  
