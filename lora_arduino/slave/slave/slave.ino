@@ -32,25 +32,75 @@ volatile int num_msgRep; // comptador dels cops que s'ha repetit l'últim missat
 // flag per indicar que s'està comunicant amb el master i que no s'ha d'entrar en mode sleep
 volatile bool comunicacioMasterFlag = false; 
 
-// per iniciar la comunicació amb el master
+volatile float llindarMinReg; // llindar a partir del qual es comença a regar
+volatile float llindarMaxReg; // llindar a partir del qual es para de regar
+
+// printa l'estat actual. Únicament serveix per debugar
+void printaEstat() {
+  switch (estat) {
+    case sleep:
+      Serial.println("Estat sleep");
+      break;
+    case wait_resp:
+      Serial.println("Estat wait_resp");
+      break;
+    case llegintDades:
+      Serial.println("Estat llegintDades");
+      break;
+    case wait_OK_comprovacioReg:
+      Serial.println("Estat wait_OK_comprovacioReg");
+      break;
+    case wait_OK_bombaON:
+      Serial.println("Estat wait_OK_bombaON");
+      break;
+    case wait_OK_bombaOFF:
+      Serial.println("Estat wait_OK_bombaOFF");
+      break;
+    case bombaEngegada:
+      Serial.println("Estat bombaEngegada");
+      break;
+    default:
+      Serial.println("Estat no reconegut");
+      break;
+  }
+}
+
+// per iniciar la comunicació amb el master. Surt de l'estat sleep i activa el flag
+// de comunicació amb el master
 void iniciaComunicacioMaster() {
   comunicacioMasterFlag = true;
+  estat = wait_resp;
 
-  //sendMessage("hello");
-  sendMessage("?"); 
+  sendMessage("preg");
+
+  printaEstat();
+
   LoRa.receive();
 }
 
 // per finalitzar la comunicació amb el master. Posa el dispositiu amb mode sleep
-// i reinicia el timer 0 per tal de que torni a començar la comunicació
+// i reinicia el timer 0 per tal de que torni a començar la comunicació.
+// Canvia al estat sleep i desactiva el flag de comunicació amb el master
 void acabaComunicacioMaster() {
   comunicacioMasterFlag = false;
+  estat = sleep;
   setup_tmr0(interval_s, iniciaComunicacioMaster);
+
+  printaEstat();
 }
 
 // modifica els llindars de reg del dispositiu
 void canviaLlindars(float llindarMin, float llindarMax) {
-  // per fer
+  Serial.println("Canviant llindars");
+  
+  llindarMinReg = llindarMin;
+  llindarMaxReg = llindarMax;
+
+  
+  Serial.print("llindarMin: ");
+  Serial.println(llindarMinReg);
+  Serial.print("llindarMax: ");
+  Serial.println(llindarMaxReg);
 }
 
 // inicia la lectura de dades d'humitat i de temperatura
@@ -92,9 +142,13 @@ void setup() {
 
   Serial.println("LoRa Slave");
 
+  delay(5000);
+
   LoRa.setPins(10,5,2); //Per sensor
   while(!LoRa.begin(866E6));
   Serial.println("Starting LoRa!");
+
+  delay(200);
 
   // iniciem el el timer per a la comunicació amb el master 
   setup_tmr0(interval_s, iniciaComunicacioMaster);
@@ -110,6 +164,10 @@ void setup() {
 
   // iniciem l'estat del slave a sleep
   estat = sleep;
+
+  // inicialitzem els valors per defecte dels llindars de reg
+  llindarMinReg = 50;
+  llindarMaxReg = 75;
   
   pinMode(4,OUTPUT);
   digitalWrite(4,HIGH);
@@ -147,12 +205,15 @@ void sendMessage(String outgoing){
   lastMsgId = msgId;
   lastMsgRespos_flag = false;
 
-  // activem la repetició del missatge per si el master no responent
+  // activem la repetició del missatge per si el master no respon
   num_msgRep = 0;
   setup_tmr0(intervalRepeticioMsg_s, repetirMissatge);
 
   if (msgId < 255) msgId++;
   else msgId = 0;
+
+  LoRa.onReceive(onReceive);
+  LoRa.receive();
 }
 
 // per tornar a enviar l'últim missatge enviat
@@ -167,14 +228,14 @@ void repetirMissatge() {
   }
   else num_msgRep++;
 
-  Serial.print("Sending packet: ");
-  Serial.println(msgId);
+  Serial.print("Repeating packet: ");
+  Serial.println(lastMsgId);
 
   // send packet
   LoRa.beginPacket();
   LoRa.write(masterAddress, 4);
   LoRa.write(localAddress, 4);
-  LoRa.write(msgId);
+  LoRa.write(lastMsgId);
   
   //uint8_t crc[4] = {0x00, 0x00, 0x00, 0x00}; // substituir per calcul de CRC
   uint8_t crc[4];
@@ -188,10 +249,14 @@ void repetirMissatge() {
 
   // activem la repetició del missatge per si el master continua sense respondre
   setup_tmr0(intervalRepeticioMsg_s, repetirMissatge);
+
+  LoRa.onReceive(onReceive);
+  LoRa.receive();
 }
 
 // Per llegir un missatge LoRa. S'executa quan es rep un missatge per LoRa
 void onReceive(int packetSize){
+  Serial.println("debug");
   if (packetSize) {
     
     // read packet header bytes
@@ -209,23 +274,17 @@ void onReceive(int packetSize){
       Serial.println("Aquest missatge no és per mi.");
       return;
     }
-    
-    // comprovem si s'està responent a l'últim missatge enviat
-    if (incomingMsgId == lastMsgId) { // resposta a l'últim missatge rebuda
-      lastMsgRespos_flag = true;
-      // aturem l'enviament del repetiment l'últim missatge
-      stop_tmr0();
-    }
-    else {      
-      Serial.println("El missatge no es correspon a l'últim missatge enviat");
-      return;
-    }
 
     String incoming = "";
-    // llegim el paquet enviat
+    // llegim el paquet rebut
     while (LoRa.available()) {
       incoming += (char)LoRa.read();
     }
+
+    // desxifrem el paquet rebut
+    // char outgoingDesxifrat[incoming.length()];
+    // decrypt_xor(incoming.c_str(), outgoingDesxifrat, 0xAA);
+    // Serial.println(outgoingDesxifrat);
 
     // received a packet
     Serial.print("Received packet: ");
@@ -237,13 +296,51 @@ void onReceive(int packetSize){
       for (int i = 0; i < 4; i++)
         Serial.print(incomingCRC[i], HEX);
       return;
+      Serial.println();
     }
 
-    if (strcmp(incoming.c_str(), "Bye") == 0)  {
-      sendMessage("ByeACK");
-      Serial.println("Sending packet: ByeACK");
-      comunicacioMasterFlag = false;
+    // comprovem si s'està responent a l'últim missatge enviat
+    if (incomingMsgId == lastMsgId) { // resposta a l'últim missatge rebuda
+      lastMsgRespos_flag = true;
+      // aturem l'enviament del repetiment l'últim missatge
+      stop_tmr0();
     }
+    else {      
+      Serial.println("El missatge no es correspon a l'últim missatge enviat");
+      return;
+    }
+
+    // realizem una acció o una altra depenent de l'estat en el que ens trobem
+    switch (estat) {
+      case sleep:
+        break;
+
+      case wait_resp:
+
+
+        if (strcmp(incoming.c_str(), "NO") == 0)  {
+          acabaComunicacioMaster();
+        }
+        else if (strcmp(incoming.c_str(), "NOASS") == 0)  {
+          acabaComunicacioMaster();
+        }
+        else if (incoming.startsWith("CP-")) {
+          // Obtenim el llidarMin i el llindarMax a modificar
+          int posMin = incoming.indexOf("min:");
+          int posMax = incoming.indexOf("max:");
+          float llindarMin = incoming.substring(posMin + 4, posMax).toFloat();
+          float llindarMax = incoming.substring(posMax + 4).toFloat();  
+
+          canviaLlindars(llindarMin, llindarMax);
+          acabaComunicacioMaster();
+        }
+        break;
+
+      default:
+        Serial.println("Estat no reconegut");
+        break;
+    }
+    
 
     LoRa.onReceive(onReceive);
     LoRa.receive();
