@@ -14,7 +14,7 @@ services:
       MYSQL_PASSWORD: isgrupA
       MYSQL_DB: integracioSistemes
     command: sh -c "service ssh start && service mysql stop && usermod -d /var/lib/mysql/ mysql && service mysql start && cd /home/basedades/is-grupA/db/src && python3 app.py"
-    restart: on-failure
+    restart: on-failure:3
 
   mysql:
     image: mysql:8.0.34
