@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { IUserDevices } from '../../utils/interfaces';
 import { useUser } from '../../context/UserContext';
 import { getUserDevices } from "../../utils/api";
-import LastInfo from './components/LastInfo';
 import DataTable from './components/dataTable';
 
 export function DataPage() {
@@ -14,8 +13,6 @@ export function DataPage() {
     const selectedValue = event.target.value;
     setSelectedDevice(selectedValue);
   };
-
-
 
   useEffect(() => {
     if (usernameId != null){
@@ -42,12 +39,8 @@ export function DataPage() {
             </option>
           ))}
         </select>
-
         {selectedDevice &&<DataTable key={selectedDevice} deviceId={parseInt(selectedDevice)}/>}
-
-
-      </div>
-          
+      </div>       
     </div>
   )
 }

@@ -1,7 +1,5 @@
 .date-change-link {
   display: inline-block;
-  /* margin-top: 30px;
-  margin-right: 10px; */
   margin: 10px 10px 10px 10px;
   padding: 10px 20px;
   color: #fff;
@@ -20,9 +18,7 @@
 }
 
 .table-data {
-  /* width: 100%; */
   border-collapse: collapse;
-  /* margin-right: 10px; */
 }
 
 .table-data th, .table-data td {
@@ -39,9 +35,6 @@
 @media (max-width: 376px) {
   .table-data td, .table-data th{
     font-size: 12px;
-    /* width: 20px; */
-    /* border-collapse: collapse; */
-    /* margin-right: 10px; */
   }
 
   .date-change-link{

@@ -2,10 +2,6 @@ import { ILogged, ILastInfo, IUserDevices, IRegister, IData, IAvailableDevices, 
 
 const ENDPOINT = 'http://127.0.0.1:5000';
 
-// const headers = {
-//   'Content-Type': 'application/json'
-// };
-
 export function loginRequest(emailUsuari:string, contrasenya: string): Promise<ILogged> {
   return fetch(`${ENDPOINT}/verificaLogIn`, {
       method: 'POST',

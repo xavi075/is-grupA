@@ -8,7 +8,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 
 import { convertDate, timePassed } from '../../../utils/functions';
 
-
 const LastInfo = (props: {deviceName: string, finalData: string, startingData: string}) => {
   console.log(props.finalData, props.startingData)
   return (

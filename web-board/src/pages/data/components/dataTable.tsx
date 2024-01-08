@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { format, startOfDay, subMonths, subWeeks } from 'date-fns';
-// import { useUser } from '../../../context/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import "./dataTable.css";
 import { IData, IWaterChanges } from '../../../utils/interfaces';

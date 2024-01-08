@@ -1,14 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Form, Button } from 'react-bootstrap';
 import { useUser } from '../../../context/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import "./ChangeParameters.css";
 import { IUserDevices } from '../../../utils/interfaces';
 import { getUserDevices, getDeviceInfo, insertThreshold } from '../../../utils/api';
 import { Link } from "react-router-dom";
-
-
-
 
 const ChangeParameters =  (props: {deviceId: number | undefined}) => {
   const { usernameId } = useUser();
@@ -36,8 +32,13 @@ const ChangeParameters =  (props: {deviceId: number | undefined}) => {
     console.log('Llindar Superior:', LlindarSuperior);
     if (LlindarInferior && LlindarSuperior && props.deviceId != null){
       insertThreshold(props.deviceId, LlindarInferior, LlindarSuperior)
-      //TO-DO: Manejar resposta
-      setContentChanged(true)
+      .then((response) => {
+        setContentChanged(true)
+      })
+      .catch((error) => {
+        setContentChanged(false)
+        console.error('Error when user devices: ', error);
+      });
     }
   };
 

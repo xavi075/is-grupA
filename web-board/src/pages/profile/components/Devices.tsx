@@ -5,7 +5,6 @@ import { getUserDevices, getAvailableDevices, assignDeviceUser, deleteDeviceUser
 import { Link } from "react-router-dom";
 import './Devices.css'
 
-
 const Devices =  () => {
   const { usernameId } = useUser();
   const [NewDevice, setNewDevice] = useState(false);
@@ -35,7 +34,7 @@ const Devices =  () => {
       setSelectedId(deviceId)
       setSelectedIdHardcode(idHardcode)
       console.log(SelectedId)
-    }    // assignDeviceUser(deviceId, usernameId)
+    }
   }
 
   const assignDevice = () => {

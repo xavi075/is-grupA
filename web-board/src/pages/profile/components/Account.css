@@ -1,8 +1,6 @@
 .account-box {
   box-sizing: border-box;
-
   width: 95%;
-  /* min-width: 400px; */
   margin: auto;
   margin-top: 10px;
   padding: 20px;

@@ -5,8 +5,6 @@ import { Link } from "react-router-dom";
 
 
 const CurrentParameters = () => {
-
-  // TO-DO: mostrar dades de l'API
   return (
     <div>
       <h2>Valors dels paràmetres actuals</h2>

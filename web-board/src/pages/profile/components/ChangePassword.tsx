@@ -7,7 +7,6 @@ import { changePwdRequest } from '../../../utils/api';
 import { IChangedPwd } from '../../../utils/interfaces';
 import { Link } from "react-router-dom";
 
-
 const ChangePassword =  () => {
   const [currentPwd, setCurrentPwd] = useState('');
   const [newPwd, setNewPwd] = useState('');
@@ -19,7 +18,6 @@ const ChangePassword =  () => {
   const toggleChangePwd = () => {
     setChangePwd(!ChangePwd);
   };
-
 
   const handleChangePwd = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,16 +34,11 @@ const ChangePassword =  () => {
           setIncorrectPwd(true)
           console.error('Incorrect password: ', error);
         });
-
         setIncorrectPwd(false);
-
-        
       } else {
         setIncorrectPwd(true);
       }
-      
     }
-
   };
 
   return (

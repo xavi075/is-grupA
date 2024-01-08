@@ -15,8 +15,6 @@ export function ParametersPage() {
     setSelectedDevice(selectedValue);
   };
 
-
-
   useEffect(() => {
     if (usernameId != null){
       getUserDevices(usernameId)
@@ -32,11 +30,6 @@ export function ParametersPage() {
   return (
     <div className='page-box'>
       <h2>Paràmetres dels dispositius</h2>
-      {/* {UserDevices?.dades.map((dispositiu) => (
-      <div key={`${dispositiu.nomDispositiu}`}>
-        <ChangeParameters key={dispositiu.id} deviceId={dispositiu.id}/>
-      </div>
-  ))} */}
       <div className='select-device-box'>
         <label htmlFor="dispositiu">Selecciona un dispositiu: </label>
         <select id="dispositiu" value={selectedDevice} onChange={handleDeviceChange}>
@@ -47,13 +40,8 @@ export function ParametersPage() {
             </option>
           ))}
         </select>
-
-        {/* <p>Dispositiu seleccionat: {selectedDevice}</p> */}
         {selectedDevice &&<ChangeParameters key={selectedDevice} deviceId={parseInt(selectedDevice)}/>}
-
-
       </div>
-          
     </div>
   )
 }
