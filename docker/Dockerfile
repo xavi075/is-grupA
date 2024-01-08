@@ -5,8 +5,7 @@ USER root
 RUN apt install openssh-server -y
 
 RUN sed -E -i 's|^#?(PasswordAuthentication)\s.*|\1 no|' /etc/ssh/sshd_config && \
-    if ! grep '^PasswordAuthentication\s' /etc/ssh/sshd_config; then echo 'PasswordAuthentication no' >> 
-/etc/ssh/sshd_config; fi
+    if ! grep '^PasswordAuthentication\s' /etc/ssh/sshd_config; then echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config; fi
 
 RUN mkdir /root/.ssh
 RUN touch /root/.ssh/authorized_keys
