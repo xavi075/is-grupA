@@ -1,6 +1,6 @@
 import { ILogged, ILastInfo, IUserDevices, IRegister, IData, IAvailableDevices, IWaterChanges } from "./interfaces";
 
-const ENDPOINT = 'http://127.0.0.1:5000';
+const ENDPOINT = 'https://api.is.ferrancasanovas.cat';
 
 export function loginRequest(emailUsuari:string, contrasenya: string): Promise<ILogged> {
   return fetch(`${ENDPOINT}/verificaLogIn`, {

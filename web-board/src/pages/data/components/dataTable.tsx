@@ -144,7 +144,7 @@ useEffect(() => {
         {WaterChanges?.dades.reverse().map((mostra, index) => (
           <tr key={`Taula2-${index}`}>
             <td>{convertDate(mostra.dataHora)}</td>
-            <td>{!mostra.estatReg ? "Inici de reg": "FInal de reg"}</td>
+            <td>{mostra.estatReg ? "Inici de reg": "Final de reg"}</td>
           </tr>
         ))}
       </tbody>
