@@ -26,7 +26,7 @@ import pytz
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, resources = {r"/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources = {r"/*": {"origins": "https://is.ferrancasanovas.cat"}})
 # connexió a la base de dades
 db = mariaDBConn('localhost', 'arnau', 'isgrupA', 'integracioSistemes')
 db.conecta()

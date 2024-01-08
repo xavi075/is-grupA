@@ -5,6 +5,7 @@ services:
     image: isgrupa
     ports:
       - "5000:5000"
+      - "5002:22"
     depends_on:
       - mysql
     environment:
@@ -12,11 +13,11 @@ services:
       MYSQL_USER: arnau
       MYSQL_PASSWORD: isgrupA
       MYSQL_DB: integracioSistemes
-    command: sh -c "service mysql stop && usermod -d /var/lib/mysql/ mysql && service mysql start && cd /home/basedades/is-grupA/db/src && python3 app.py"
+    command: sh -c "service ssh start && service mysql stop && usermod -d /var/lib/mysql/ mysql && service mysql start && cd /home/basedades/is-grupA/db/src && python3 app.py"
     restart: on-failure
 
   mysql:
-    image: mysql:5.7
+    image: mysql:8.0.34
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: 1
       MYSQL_DATABASE: integracioSistemes
@@ -29,9 +30,10 @@ services:
 
   webboard:
     image: isgrupa
-    command: sh -c "cd /home/web/is-grupA/web-board && node -v && npm -v && npm install && npm start"
+    command: sh -c "service ssh start && cd /home/web/is-grupA/web-board && node -v && npm -v && npm install && npm start"
     ports:
       - "5001:3000"
+      - "5003:22"
     depends_on:
       - webapi
 
