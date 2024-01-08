@@ -16,6 +16,21 @@ void printaAddress(uint8_t address[4]) {
   }
 }
 
+String llegeixPortSerie() {
+  while (!Serial.available());
+  
+  String resposta;
+  while (Serial.available() > 0) {
+    // Lee el byte recibido
+    char byteRecibido = Serial.read();
+
+    resposta.concat(byteRecibido);
+  }
+  Serial.print("RESPOSTA = ");
+  Serial.println(resposta);
+  return resposta;
+}
+
 void setup() {
   Serial.begin(9600);
   while (!Serial);
@@ -53,11 +68,29 @@ void sendMessage(uint8_t destinationAddress[], byte msgIdResponse, String outgoi
   uint8_t crc[4];
   calcularCRC(crc, outgoing.c_str(), outgoing.length());
   LoRa.write(crc, 4);
-
+  
   LoRa.write(outgoing.length());
 
+  
+  // xifrem el paquet
+  // char outgoingXifrat[outgoing.length()];
+  // Serial.println(outgoing);
+  // encrypt_xor(outgoing.c_str(), outgoingXifrat, 0xAA);
+  // Serial.println(outgoing);
+  // Serial.println(outgoingXifrat);
+  
+  //char outgoingDesxifrat[outgoing.length()];
+  //decrypt_xor(outgoingXifrat, outgoingDesxifrat, 0xAA);
+  //Serial.println(outgoingDesxifrat);
+
+
   LoRa.print(outgoing);
+  
+  
   LoRa.endPacket();
+  
+  Serial.print("Sending packet: ");
+  Serial.println(outgoing);
 }
 
 // Per llegir un missatge LoRa. S'executa quan es rep un missatge per LoRa
@@ -98,32 +131,31 @@ void onReceive(int packetSize){
       return;
     }
 
-    if (strcmp(incoming.c_str(), "hello") == 0)  {
-      digitalWrite(4,LOW);
-      sendMessage(senderAddress, incomingMsgId, "Bye");
-      Serial.println("Sending packet: Bye");
-    }
+    // if (strcmp(incoming.c_str(), "hello") == 0)  {
+    //   digitalWrite(4,LOW);
+    //   sendMessage(senderAddress, incomingMsgId, "Bye");
+    // }
 
-
-    // si el missatge és "?" demanem si hi ha algun canvi de paràmetres
-    if (strcmp(incoming.c_str(), "?") == 0)  {
+    // si el missatge és "preg" demanem si hi ha algun canvi de paràmetres
+    if (strcmp(incoming.c_str(), "preg") == 0)  {
       // enviem missatge pel port sèrie
       Serial.print("?-");
       printaAddress(senderAddress);
       Serial.println();
 
       // llegim la resposta
-      String resposta = llegeixPortSerie();
+      //String resposta = llegeixPortSerie();
     
       // retornem la resposta al slave. La resposta pot ser "NO", "NOASS" o semblant a "CP-min:45.0max:70.6"
-      sendMesssage(senderAddress, incomingMsgId, resposta.c_str());
-      Serial.print("Sending packet: ");
-      Serial.println(resposta);
+      // sendMessage(senderAddress, incomingMsgId, resposta.c_str());
+      // Serial.print("Sending packet: ");
+      // Serial.println(resposta);
+
+      sendMessage(senderAddress, incomingMsgId, "NO");
     }
 
-
     // si el missatge comença per "d-", significa que ens està enviant les dades d'humitat i temperatura
-    if (incoming.startsWith("d-"))  {
+    else if (incoming.startsWith("d-"))  {
       // trobem la posició de "H:" i de "T:"
       int posH = incoming.indexOf("H:");
       int posT = incoming.indexOf("T:"); 
@@ -138,19 +170,21 @@ void onReceive(int packetSize){
       Serial.print(incoming.substring(posH));
       Serial.println();
 
-      // llegim la resposta
-      String resposta = llegeixPortSerie();
+      // // llegim la resposta
+      // String resposta = llegeixPortSerie();
       
-      // si ha anat bé, informem al slave enviant "OK"
-      if (strcmp(resposta.c_str(), "OK") == 0) {
-        sendMesssage(senderAddress, incomingMsgId, resposta.c_str());
-        Serial.print("Sending packet: ");
-        Serial.println(resposta);
-      }
+      // // si ha anat bé, informem al slave enviant "OK"
+      // if (strcmp(resposta.c_str(), "OK") == 0) {
+      //   sendMesssage(senderAddress, incomingMsgId, resposta.c_str());
+      //   Serial.print("Sending packet: ");
+      //   Serial.println(resposta);
+      // }
+
+      sendMessage(senderAddress, incomingMsgId, "OK");
     }
 
     // si el missatge comença per -r, signigica que està enviant l'estat del reg
-    if (incoming.startsWith("r-"))  {
+    else if (incoming.startsWith("r-"))  {
       // obtenim la subcadena posterior a "r-""
       String estat = incoming.substring(2);
 
@@ -161,19 +195,20 @@ void onReceive(int packetSize){
       Serial.print(estat);
       Serial.println();
 
-      // llegim la resposta
-      String resposta = llegeixPortSerie();
-      Serial.print("RESPOSTA: ");
-      Serial.println(resposta);
+      // // llegim la resposta
+      // String resposta = llegeixPortSerie();
+      // Serial.print("RESPOSTA: ");
+      // Serial.println(resposta);
 
-      // si ha anat bé, informem al slave enviant "OK"
-      if (strcmp(resposta.c_str(), "OK") == 0) {
-        sendMesssage(senderAddress, incomingMsgId, resposta.c_str());
-        Serial.print("Sending packet: ");
-        Serial.println(resposta);
-      }
+      // // si ha anat bé, informem al slave enviant "OK"
+      // if (strcmp(resposta.c_str(), "OK") == 0) {
+      //   sendMesssage(senderAddress, incomingMsgId, resposta.c_str());
+      //   Serial.print("Sending packet: ");
+      //   Serial.println(resposta);
+      // }
+
+      sendMessage(senderAddress, incomingMsgId, "OK");
     }
-
 
     LoRa.receive();
     LoRa.onReceive(onReceive);

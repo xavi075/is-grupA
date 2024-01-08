@@ -56,8 +56,15 @@ OneWire oneWire(pin_temperatura);
 DallasTemperature sensors(&oneWire);
 float valorTemperatura; // variable per emmagatzemar el valor de temperatura llegit
 
+const int interval_LecturaDades_bombaON_s = 10; // interval de temps per llegir la humitat novament per comprovar si s'ha regat suficient
+
 const int pin_bomba = 6; // pin per activar i desactivar la bomba
-bool estatBomba;
+
+// canvia l'estat i el printa
+void canviaEstat(estats_slave nouEstat) {
+  estat = nouEstat;
+  printaEstat();
+}
 
 // printa l'estat actual. Únicament serveix per debugar
 void printaEstat() {
@@ -93,11 +100,9 @@ void printaEstat() {
 // de comunicació amb el master
 void iniciaComunicacioMaster() {
   comunicacioMasterFlag = true;
-  estat = wait_resp;
+  canviaEstat(wait_resp);
 
   sendMessage("preg");
-
-  printaEstat();
 
   LoRa.receive();
 }
@@ -109,10 +114,9 @@ void acabaComunicacioMaster() {
   if (num_comunicacions_llegirDades_restants > 0) num_comunicacions_llegirDades_restants--;
 
   comunicacioMasterFlag = false;
-  estat = sleep;
+  canviaEstat(sleep);
   setup_tmr0(interval_s, iniciaComunicacioMaster);
 
-  printaEstat();
 }
 
 // modifica els llindars de reg del dispositiu
@@ -127,6 +131,13 @@ void canviaLlindars(float llindarMin, float llindarMax) {
   Serial.println(llindarMinReg);
   Serial.print("llindarMax: ");
   Serial.println(llindarMaxReg);
+}
+
+// s'executa en la interrupció del timer 0 per tornar a calcular el valor de l'humitat després de regar un cert temps.
+// Inicia la lectura de dades i modifica l'estat a llegintDades
+void bombaEngegada_to_llegintDades() {
+  iniciaLectura();
+  canviaEstat(llegintDades);
 }
 
 // inicia la lectura de dades d'humitat. Això implica engegar el modulator i les interrupcions del timer 2
@@ -160,12 +171,17 @@ void enviaEstatReg(String estatReg) {
 
 // engega la bomba
 void engegaBomba() {
-  digitalWrite(pin_bomba, LOW);
+  digitalWrite(pin_bomba, HIGH);
 }
 
 // para la bomba
 void paraBomba() {
-  // per fer
+  digitalWrite(pin_bomba, LOW);
+}
+
+// consulta l'estat de la bomba. True si està engegada i False si està parada
+bool comprovaReg() {
+  return (digitalRead(pin_bomba) == 1);
 }
 
 void setup() {
@@ -211,9 +227,8 @@ void setup() {
 
   // inicialitzem el pin de la bomba com a sortida i activem el pin ENA (PC3 = A3/17)
   pinMode(pin_bomba, OUTPUT);
-  pinMode(A3, OUTPUT);
-  digitalWrite(A3, HIGH);
-  estatBomba = false;
+  pinMode(17, OUTPUT);
+  digitalWrite(17, HIGH);
   
   pinMode(4,OUTPUT);
   digitalWrite(4,HIGH);
@@ -226,7 +241,9 @@ void loop() {
 
   if (estat == llegintDades) {
     if (dadesLlegidesFlag) { // s'han acabat de llegir les dades
+      // en tots els casos aturem la lectura de dades
       aturaLectura();
+
       // càlcul del valor mitjà d'humitat
       float avg_humitat = contenidor_valorHumitat / num_mostresHumitat;
 
@@ -239,13 +256,24 @@ void loop() {
       valorTemperatura = sensors.getTempCByIndex(0);  // Obtener la temperatura en grados Celsius
       Serial.println(valorTemperatura);
 
-      if (!estatBomba) { // la bomba està OFF
+      if (!comprovaReg()) { // la bomba està OFF
         enviaDades(); // enviem els valors d'humitat llegits
+        // modifiquem l'estat
+        canviaEstat(wait_OK_comprovacioReg);
+      }
+      else { // la bomba està ON
+        if (valorHumitat < llindarMaxReg) { // seguim amb la bomba ON i llegintDades
+          setup_tmr0(interval_LecturaDades_bombaON_s, bombaEngegada_to_llegintDades);
+          // modifiquem l'estat
+          canviaEstat(bombaEngegada);
+        }
+        else { // iniciem procediment per parar la bomba
+          enviaEstatReg("OFF");
+          // modifiquem l'estat
+          canviaEstat(wait_OK_bombaOFF);
+        }
       }
       
-      // modifiquem l'estat
-      estat = wait_OK_comprovacioReg;
-      printaEstat();
     }
   }
 }
@@ -393,10 +421,9 @@ void onReceive(int packetSize){
         }
         else if (strcmp(incoming.c_str(), "NO") == 0)  {
           if (num_comunicacions_llegirDades_restants == 0) {
-            estat = llegintDades;
-            printaEstat();
             num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades;
             iniciaLectura();
+            canviaEstat(llegintDades);
           }
           else {
             acabaComunicacioMaster();
@@ -412,10 +439,9 @@ void onReceive(int packetSize){
           canviaLlindars(llindarMin, llindarMax);
           
           if (num_comunicacions_llegirDades_restants == 0) {
-            estat = llegintDades;
-            printaEstat();
             num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades;
             iniciaLectura();
+            canviaEstat(llegintDades);
           }
           else {
             acabaComunicacioMaster();
@@ -427,14 +453,26 @@ void onReceive(int packetSize){
 
         if (strcmp(incoming.c_str(), "OK") == 0)  { // rebem la confirmació
           
-          if (estatBomba) { // falta mirar llindars
+          if (valorHumitat < llindarMinReg) {
+            enviaEstatReg("ON");
+            // modifiquem l'estat
+            canviaEstat(wait_OK_bombaON);
+          }
 
-          }
-          else if (!estatBomba && valorHumitat > llindarMaxReg) {
+          else {
             enviaEstatReg("OFF");
-            estat = wait_OK_bombaOFF;
-            printaEstat();
+            // modifiquem l'estat
+            canviaEstat(wait_OK_bombaOFF);
           }
+        }
+
+      case wait_OK_bombaON:
+
+        if (strcmp(incoming.c_str(), "OK") == 0)  { // rebem la confirmació
+          engegaBomba();
+          setup_tmr0(interval_LecturaDades_bombaON_s, bombaEngegada_to_llegintDades);
+          // modifiquem l'estat
+          canviaEstat(bombaEngegada);
         }
 
       case wait_OK_bombaOFF:

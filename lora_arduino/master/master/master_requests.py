@@ -7,16 +7,13 @@ Codi que es comunica mitjançant el port sèrie amb el master per realitzar les 
 al bon funcionament de l'aplicació
 """
 
-# URL de la API JSONPlaceholder para obtener la lista de usuarios
-url = "https://jsonplaceholder.typicode.com/users"
-
 def comprovaDispositiuExistent(idDispo_hardcoded):
     """
     Per comprovar si el dispositiu està guardat a la base de dades i està assignat a un usuari.
     """
     try:
         # Realitzar una petició per obtenir la informació del dispositiu
-        url = "http://localhost:5000/comprovacioDispositiuInserit?idHardcode=" + idDispo_hardcoded 
+        url = "http://api.is.ferrancasanovas.cat/comprovacioDispositiuInserit?idHardcode=" + idDispo_hardcoded 
         response = requests.get(url)
 
         # verificar si la sol·licitud és exitosa (codi d'estat 200)
@@ -37,7 +34,7 @@ def insereixDispositiu(idDispo_hardcoded):
     """
     try:
         # Realitzar una petició per inserir el dispositiu
-        url = "http://localhost:5000/inserirDispositiu"
+        url = "http://api.is.ferrancasanovas.cat/inserirDispositiu"
         dades_json = {
             "idHardcode": idDispo_hardcoded,
             "llindarMinimReg": 50, # canviar per valors reals
@@ -60,7 +57,7 @@ def comprovaModificacionsLlindars(idDispo_hardcoded):
     """
     try:
         # Realitzar una petició per obtenir la informació del dispositiu
-        url = "http://localhost:5000/obtenirModificacionsLlindars?idHardcode=" + idDispo_hardcoded
+        url = "http://api.is.ferrancasanovas.cat/obtenirModificacionsLlindars?idHardcode=" + idDispo_hardcoded
         response = requests.get(url)
 
         # verificar si la sol·licitud és exitosa (codi d'estat 200)
@@ -86,7 +83,7 @@ def enviaDades(idDispo_hardcoded, humitat, temperatura):
     """
     try:
         # Realitzar una petició per inserir la dada
-        url = "http://localhost:5000/inserirDada"
+        url = "http://api.is.ferrancasanovas.cat/inserirDada"
         dades_json = {
             "idHardcode": idDispo_hardcoded,
             "dadaHum": humitat,
@@ -109,7 +106,7 @@ def enviaEstatReg(idDispo_hardcoded, estatReg):
     """
     try:
         # Realitzar una petició per inserir la dada
-        url = "http://localhost:5000/inserirEstatReg"
+        url = "http://api.is.ferrancasanovas.cat/inserirEstatReg"
         dades_json = {
             "idHardcode": idDispo_hardcoded,
             "estatReg": estatReg
@@ -128,7 +125,7 @@ def enviaEstatReg(idDispo_hardcoded, estatReg):
 if __name__ == '__main__':
     try:
         # Configura el port sèrie
-        ser = serial.Serial('/dev/ttyACM0', 9600)
+        ser = serial.Serial('COM13', 9600)
         
         while True:
             # llegeix una línia pel port sèrie
