@@ -10,5 +10,3 @@ nvm use 14.10.0
 nvm alias default v14.10.0
 nvm use default
 npm install -g npm@7.24.2
-node -v
-npm -v

@@ -30,7 +30,7 @@ services:
 
   webboard:
     image: isgrupa
-    command: sh -c "service ssh start && cd /home/web/is-grupA/web-board && node -v && npm -v && npm install && npm start"
+    command: sh -c "service ssh start && cd /home/web/is-grupA/web-board && node -v && npm -v && npm start"
     ports:
       - "5001:3000"
       - "5003:22"

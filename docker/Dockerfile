@@ -64,3 +64,5 @@ RUN installWEBlibraries.sh
 ENV NODE_PATH /root/.nvm/versions/node/v14.10.0/lib/node_modules
 ENV PATH /root/.nvm/versions/node/v14.10.0/bin:$PATH 
 
+RUN npm install
+
