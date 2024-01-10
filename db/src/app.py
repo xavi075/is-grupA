@@ -26,29 +26,30 @@ import pytz
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app, resources = {"r/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources = {r"/*": {"origins": "https://is.ferrancasanovas.cat"}})
+
 # connexió a la base de dades
-db = mariaDBConn('localhost', 'ferran', '3007', 'integracioSistemes')
+db = mariaDBConn('localhost', 'arnau', 'isgrupA', 'integracioSistemes')
 db.conecta()
 
 # llista en la qual es guarden els llindars que s'han modificat. S'emmagatzemen en forma de diccionaris
 # amb la forma següent: {'idDispositiu': (int), 'llindarMinimReg': (decimal), 'llindarMaximReg': (decimal)}
 llindarsModificats = []
 
-def __posicio_llindarDispositiu(idDispositiu):
+def __posicio_llindarDispositiu(idHardcode):
     """
     Per saber la posició on es troba la modificació del llindar d'un dispositiu de la llista 
     llindarsModificats.  
 
     Args:
-        idDispositiu (int): identificador del dispositiu del qual es vol saber els llindars.
+        idHardcode (str): identificador del dispositiu del qual es vol saber els llindars.
 
     Returns:
         int: Retorna la posició on es troba la modificació del llindar d'un dispositiu de la llista 
             llindarsModificats. Si no troba cap modificació de llindars pel dispositiu, retorna -1.  
     """
     for i, dict in enumerate(llindarsModificats):
-        if dict['idDispositiu'] == idDispositiu:
+        if dict['idHardcode'] == idHardcode:
             return i
 
     else:
@@ -125,34 +126,6 @@ def inserirUsuari():
     s'encarrega d'aplicar-lo. Per a un correcte funcionament del sistema, serà necessari utilitzar
     un protocol https. Al inserir un usuari, s'insereix a la base de dades la data utf de creació
     de l'usuari.
-
-    Mètode: POST
-    Format de dades esperat: JSON
-
-    Exemple de sol·licitud:
-    ```
-    POST /inserirUsuari
-    {
-        "email": "usuari@exemple.com",
-        "nomUsuari": "nom_usuari",
-        "contrasenya": "pwd"
-    }
-    ```
-
-    Respostes possibles:
-    - 200 OK: Dades insertades correctament. Especifica el id que se li ha assignat a l'usuari insertat.
-        ```json
-        {
-            "success" = True,
-            "idUsuariInsertat": id
-        }   
-        ```
-    - 400 Bad Request:
-        - Si no es proporciona un JSON en la sol·licitud.
-        - Si falta alguna dada necessària en el JSON. S'especifica quina dada falta.
-    - 500 Internal Sever Error: 
-        - Error al inserir les dades a la base de dades.
-        - Error no controlat.
     """
     try: 
         try: 
@@ -194,7 +167,7 @@ def inserirUsuari():
 def inserirDispositiu():
     """
     Endpoint de Flask per inserir dades a la taula dispositius. Permet inserir un dispositiu no assignat a
-    cap usuari.
+    cap usuari. Tot i així, és obligatori afegir-li un id que el permeti identifiqui amb el hardware. 
     """
     try: 
         try: 
@@ -202,21 +175,28 @@ def inserirDispositiu():
         except Exception as e:
             return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
 
+        idHardcode = dades_json.get('idHardcode')
         idUsuari = dades_json.get('idUsuariPropietari')
         nomDispositiu = dades_json.get('nomDispositiu')
         llindarMin = dades_json.get('llindarMinimReg')
         llindarMax = dades_json.get('llindarMaximReg')
 
-        db.començaTransaccio()
-        try:
-            db.insert('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu, 'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax})
-        except Exception as e:
-            db.rollback()
-            return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+        if idHardcode is None:
+            return jsonify({'success': False, 'error': f"Camp 'idHardcode' no especificat en el JSON"}), 400
+        
         else:
-            db.commit()
-            idDispositiuInsertat = db.executaQuery("SELECT id FROM dispositius ORDER BY id DESC LIMIT 1")[0][0]
-            return jsonify({'success': True, 'iDispositiuInsertat': idDispositiuInsertat})
+            db.començaTransaccio()
+            try:
+                db.insert('dispositius', {'idHardcode': idHardcode, 'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu, 'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax})
+            except Exception as e:
+                db.rollback()
+                return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+            else:
+                db.commit()
+                dadesDispositiuInsertat = db.executaQuery("SELECT id, idHardcode FROM dispositius ORDER BY id DESC LIMIT 1")
+                idDispositiuInsertat = dadesDispositiuInsertat[0][0]
+                idHardcodeDispositiuInsertat = dadesDispositiuInsertat[0][1]
+                return jsonify({'success': True, 'idDispositiu': idDispositiuInsertat, 'idHardcode': str(idHardcodeDispositiuInsertat)})
     
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -232,28 +212,48 @@ def inserirDadesDispositiu():
         except Exception as e:
             return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
 
-        idDispositiu = dades_json.get('idDispositiu')
+        idHardcode = dades_json.get('idHardcode')
         dataCreacio_utc = datetime.now(pytz.utc)
         dadaHum = dades_json.get('dadaHum')
         dadaTemp = dades_json.get('dadaTemp')
 
-        if idDispositiu is None:
-            return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
+        if idHardcode is None:
+            return jsonify({'success': False, 'error': f"Camp 'idHardcode' no especificat en el JSON"}), 400
         elif dadaHum is None:
             return jsonify({'success': False, 'error': f"Camp 'dadaHum' no especificat en el JSON"}), 400
         elif dadaTemp is None:
             return jsonify({'success': False, 'error': f"Camp 'dadaTemp' no especificat en el JSON"}), 400
         
         else:
-            db.començaTransaccio()
-            try:
-                db.insert('dadesDispositius', {'idDispositiu': idDispositiu, 'dataHora': dataCreacio_utc, 'dadaHum': dadaHum, 'dadaTemp': dadaTemp})
+            
+            # Obtenir les dades de tots els dispositius
+            query = """SELECT id 
+                    FROM dispositius 
+                    WHERE idHardcode = %s 
+                        AND idUsuariPropietari IS NOT NULL"""
+            params = (idHardcode, )
+
+            try: 
+                dades_dispositius = db.executaQuery(query, params)
+
             except Exception as e:
-                db.rollback()
-                return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+                return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+            
             else:
-                db.commit()
-                return jsonify({'success': True})
+                
+                if(len(dades_dispositius) == 0):
+                    return jsonify({'success': False, 'error': f"No hi ha dispositius assignats amb el idHardcode especificat en el JSON"}), 400
+                else:
+                    idDispositiu = dades_dispositius[0][0]
+                    db.començaTransaccio()
+                    try:
+                        db.insert('dadesDispositius', {'idDispositiu': idDispositiu, 'dataHora': dataCreacio_utc, 'dadaHum': dadaHum, 'dadaTemp': dadaTemp})
+                    except Exception as e:
+                        db.rollback()
+                        return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+                    else:
+                        db.commit()
+                        return jsonify({'success': True})
     
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -261,7 +261,7 @@ def inserirDadesDispositiu():
 @app.route('/inserirEstatReg', methods = ['POST'])
 def inserirEstatReg():
     """
-    Endpoint de Flask per inserir dades a la taula canvisReg. Aquest només insereix és els canvis, és a dir
+    Endpoint de Flask per inserir dades a la taula canvisReg. Aquest només insereix els canvis, és a dir,
     només insereix la dada si la última dada del dispositiu és diferent.
     """
     try: 
@@ -270,42 +270,56 @@ def inserirEstatReg():
         except Exception as e:
             return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
 
-        idDispositiu = dades_json.get('idDispositiu')
+        idHardcode = dades_json.get('idHardcode')
         dataCreacio_utc = datetime.now(pytz.utc)
         estatReg = dades_json.get('estatReg')
 
-        if idDispositiu is None:
-            return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
+        if idHardcode is None:
+            return jsonify({'success': False, 'error': f"Camp 'idHardcode' no especificat en el JSON"}), 400
         elif estatReg is None:
             return jsonify({'success': False, 'error': f"Camp 'estatReg' no especificat en el JSON"}), 400
         
         else:
+            
             try:
-                query = """SELECT estatReg
-                        FROM canvisReg
-                        WHERE idDispositiu = %s
-                        ORDER BY dataHora DESC
-                        LIMIT 1"""
-                params = (idDispositiu, )
-                last_estatReg = db.executaQuery(query, params)
-
+                query = """SELECT id
+                        FROM dispositius
+                        WHERE idHardcode = %s
+                        """
+                params = (idHardcode, )
+                dades_id = db.executaQuery(query, params)
+                idDispositiu = dades_id[0][0]
+                
             except Exception as e:
                 return jsonify({'success': False, 'error': f"Error al consultar l'última dada: {str(e)}"}), 500
+            
             else:
-                # només s'insereix la dada si la dada és diferent a l'última dada inserida
-                if len(last_estatReg) > 0: # hi ha alguna dada inserida
-                    if last_estatReg[0][0] == estatReg: # l'última dada inserida és igual
-                        return jsonify({'success': True, 'dadaInserida': False})
-
-                db.començaTransaccio()
                 try:
-                    db.insert('canvisReg', {'idDispositiu': idDispositiu, 'dataHora': dataCreacio_utc, 'estatReg': estatReg})
+                    query = """SELECT estatReg
+                            FROM canvisReg
+                            WHERE idDispositiu = %s
+                            ORDER BY dataHora DESC
+                            LIMIT 1"""
+                    params = (idDispositiu, )
+                    last_estatReg = db.executaQuery(query, params)
+
                 except Exception as e:
-                    db.rollback()
-                    return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+                    return jsonify({'success': False, 'error': f"Error al consultar l'última dada: {str(e)}"}), 500
                 else:
-                    db.commit()
-                    return jsonify({'success': True, 'dadaInserida': True})
+                    # només s'insereix la dada si la dada és diferent a l'última dada inserida
+                    if len(last_estatReg) > 0: # hi ha alguna dada inserida
+                        if last_estatReg[0][0] == estatReg: # l'última dada inserida és igual
+                            return jsonify({'success': True, 'dadaInserida': False})
+
+                    db.començaTransaccio()
+                    try:
+                        db.insert('canvisReg', {'idDispositiu': idDispositiu, 'dataHora': dataCreacio_utc, 'estatReg': estatReg})
+                    except Exception as e:
+                        db.rollback()
+                        return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+                    else:
+                        db.commit()
+                        return jsonify({'success': True, 'dadaInserida': True})
     
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -356,7 +370,7 @@ def verificaLogIn():
 def assignaDispositiuUsuari():
     """
     Endpoint de Flask per assignar un dispositiu a un usuari. Només permet assignar-lo si el dispositiu
-    està desassignat, és a dir que no està assignat a cap altra usuari.
+    està desassignat, és a dir, que no està assignat a cap altra usuari.
     """
     try: 
         try: 
@@ -367,8 +381,6 @@ def assignaDispositiuUsuari():
         idDispositiu = dades_json.get('idDispositiu')
         idUsuari = dades_json.get('idUsuari')
         nomDispositiu = dades_json.get('nomDispositiu')
-        llindarMin = dades_json.get('llindarMinimReg')
-        llindarMax = dades_json.get('llindarMaximReg')
 
         if idDispositiu is None:
             return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
@@ -379,10 +391,69 @@ def assignaDispositiuUsuari():
         
         else:
             try:
-                query = """SELECT idUsuariPropietari
+                query = """SELECT idHardcode, idUsuariPropietari
                         FROM dispositius
                         WHERE id = %s"""
                 params = (idDispositiu, )
+                dades = db.executaQuery(query, params)
+                
+                idHardcode = dades[0][0]
+            
+            except Exception as e:
+                return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+            
+            else:
+                if len(dades) == 0:
+                    return jsonify({'success': False, 'error': f"No existeix cap dispositiu amb l'identificador especificat"}), 400
+                else:
+                    if dades[0][1] != None:
+                        return jsonify({'success': False, 'error': f"El dispositiu està assignat a un altre usuari"}), 400
+                    
+                    else:
+                        db.començaTransaccio()
+                        try:
+                            db.update('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu}, "id = " + str(idDispositiu))
+
+                        except Exception as e:
+                            db.rollback()
+                            return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
+                        
+                        else:
+                            db.commit()
+                            return jsonify({'success': True, 'dades': {'idHardcode': str(idHardcode)}})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
+@app.route('/desassignaDispositiu', methods = ['POST'])
+def desassignaDispositiu():
+    """
+    Endpoint de Flask per desassignar un dispositiu a un usuari. Només es pot desassignar un dispositiu
+    si aquest està assignat a un usuari. A més, s'esborren totes les dades del dispositiu de les taules 
+    de dades corresponents a les dades de humitat i temperatura (dadesDispositius) i a la de canvis d'estat 
+    de reg (canvisReg)
+    """
+    try: 
+        try: 
+            dades_json = request.json
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
+
+        idDispositiu = dades_json.get('idDispositiu')
+        idUsuari = dades_json.get('idUsuari')
+
+        if idDispositiu is None:
+            return jsonify({'success': False, 'error': f"Camp 'idDispositiu' no especificat en el JSON"}), 400
+        elif idUsuari is None:
+            return jsonify({'success': False, 'error': f"Camp 'idUsuari' no especificat en el JSON"}), 400
+        
+        else:
+            try:
+                query = """SELECT *
+                        FROM dispositius
+                        WHERE id = %s
+                        AND idUsuariPropietari = %s"""
+                params = (idDispositiu, idUsuari, )
                 dades = db.executaQuery(query, params)
             
             except Exception as e:
@@ -392,21 +463,19 @@ def assignaDispositiuUsuari():
                 if len(dades) == 0:
                     return jsonify({'success': False, 'error': f"No existeix cap dispositiu amb l'identificador especificat"}), 400
                 else:
-                    if dades[0][0] != None:
-                        return jsonify({'success': False, 'error': f"El dispositiu està assignat a un altre usuari"}), 400
+                    db.començaTransaccio()
+                    try:
+                        db.update('dispositius', {'idUsuariPropietari': None, 'nomDispositiu': None}, "id = " + str(idDispositiu))
+                        db.delete('dadesDispositius', 'idDispositiu =' + str(idDispositiu))
+                        db.delete('canvisReg', 'idDispositiu =' + str(idDispositiu))
+
+                    except Exception as e:
+                        db.rollback()
+                        return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
                     
                     else:
-                        db.començaTransaccio()
-                        try:
-                            db.update('dispositius', {'idUsuariPropietari': idUsuari, 'nomDispositiu': nomDispositiu, 'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax}, "id = " + str(idDispositiu))
-
-                        except Exception as e:
-                            db.rollback()
-                            return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
-                        
-                        else:
-                            db.commit()
-                            return jsonify({'success': True})
+                        db.commit()
+                        return jsonify({'success': True})
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -488,27 +557,41 @@ def modificaLLindars():
             return jsonify({'success': False, 'error': f"Camp 'llindarMaximReg' no especificat en el JSON"}), 400
         
         else:
-            db.començaTransaccio()
-            try:
-                db.update('dispositius', {'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax}, "id = " + str(idDispositiu))
+            
+            try: 
+                params = (idDispositiu, )
+                query = """SELECT idHardcode 
+                    FROM dispositius 
+                    WHERE id = %s"""
+                dades_dispositiu = db.executaQuery(query, params)
 
             except Exception as e:
-                db.rollback()
-                return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
+                return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
             
-            else:
-                db.commit()
+            else:    
+                idHardcode = dades_dispositiu[0][0]
                 
-                posLlindarDispo = __posicio_llindarDispositiu(idDispositiu)
-                if posLlindarDispo != -1: # el dispositiu té un llindar modificat guardat
-                    llindarsModificats.pop(posLlindarDispo)
+                db.començaTransaccio()
+                try:
+                    db.update('dispositius', {'nivellMinimReg': llindarMin, 'nivellMaximReg': llindarMax}, "id = " + str(idDispositiu))
+
+                except Exception as e:
+                    db.rollback()
+                    return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
                 
-                # en aquest punt sabem que no es troba cap llindar del dispositiu guardat
-                llindarsModificats.append({'idDispositiu': idDispositiu, \
-                                           'llindarMinimReg': llindarMin, \
-                                            'llindarMaximReg': llindarMax})
-                
-                return jsonify({'success': True})
+                else:
+                    db.commit()
+                    
+                    posLlindarDispo = __posicio_llindarDispositiu(idHardcode)
+                    if posLlindarDispo != -1: # el dispositiu té un llindar modificat guardat
+                        llindarsModificats.pop(posLlindarDispo)
+                    
+                    # en aquest punt sabem que no es troba cap llindar del dispositiu guardat
+                    llindarsModificats.append({'idHardcode': idHardcode, \
+                                            'llindarMinimReg': llindarMin, \
+                                                'llindarMaximReg': llindarMax})
+                    
+                    return jsonify({'success': True})
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
@@ -577,7 +660,7 @@ def obtenirDispositius():
 
         if idDispositiu:
             # Obtenir les dades d'un dispositiu específic
-                query = """SELECT id, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
+                query = """SELECT id, idHardcode, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
                         FROM dispositius
                         WHERE id = %s"""
                 params = (idDispositiu, )
@@ -585,21 +668,21 @@ def obtenirDispositius():
         elif idUsuari:
             if nomDispositiu:
                 # Obtenir les dades d'un nom de dispositiu i usuari
-                query = """SELECT id, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
+                query = """SELECT id, idHardcode, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
                         FROM dispositius 
                         WHERE idUsuariPropietari = %s AND nomDispositiu = %s"""
                 params = (idUsuari, nomDispositiu)
 
             else:
                 # Obtenir les dades d'un usuari específic
-                query = """SELECT id, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
+                query = """SELECT id, idHardcode, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg
                         FROM dispositius
                         WHERE idUsuariPropietari = %s"""
                 params = (idUsuari, )
 
         else:
             # Obtenir les dades de tots els dispositius
-            query = "SELECT id, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg FROM dispositius"
+            query = "SELECT id, idHardcode, idUsuariPropietari, nomDispositiu, nivellMinimReg, nivellMaximReg FROM dispositius"
             params = ()
 
         try: 
@@ -612,10 +695,11 @@ def obtenirDispositius():
             dades_formatejades = [
                 {
                     "id": dispo[0],
-                    "idUsuariPropietari": dispo[1],
-                    "nomDispositiu": dispo[2],
-                    "llindarMinimReg": dispo[3],
-                    "llindarMaximReg": dispo[4]
+                    "idHardcode": dispo[1],
+                    "idUsuariPropietari": dispo[2],
+                    "nomDispositiu": dispo[3],
+                    "llindarMinimReg": dispo[4],
+                    "llindarMaximReg": dispo[5]
                 }
                 for dispo in dades_dispositius
             ]
@@ -643,7 +727,8 @@ def obtenirDispositiusDesassignats():
         else:     
             dades_formatejades = [
                 {
-                    "id": dispo[0],
+                    "idDispositiu": dispo[0],
+                    "idHardcode": str(dispo[1])
                 }
                 for dispo in dades_dispositius
             ]
@@ -652,6 +737,40 @@ def obtenirDispositiusDesassignats():
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
 
+@app.route('/comprovacioDispositiuInserit', methods = ['GET'])
+def comprovacioDispositiuInserit():
+    """
+    Endpoint de Flask per comprovar si un dispositiu ha sigut inserit a la base de dades i està assignat.
+    """
+    try:
+        idHardcode = request.args.get('idHardcode')
+        
+        if idHardcode is None:
+            return jsonify({'success': False, 'error': f"'idHardcode' no especificat"}), 400
+        
+        try: 
+            params = (idHardcode, )
+            query = """SELECT idUsuariPropietari 
+                FROM dispositius 
+                WHERE idHardcode = %s"""
+            dades_dispositiu = db.executaQuery(query, params)
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+        
+        else:  
+            if(len(dades_dispositiu)): # el dispositiu està a la base de dades
+                idUsuariPropietari = dades_dispositiu[0][0]
+                if(idUsuariPropietari):
+                    return jsonify({'success': True, 'dispositiuTrobat': True, "assignat": True})
+                else:
+                    return jsonify({'success': True, 'dispositiuTrobat': True, "assignat": False})
+            else: # el dispositiu no està a la base de dades
+                return jsonify({'success': True, 'dispositiuTrobat': False, "assignat": False})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+    
 @app.route('/obtenirDadesDispositius', methods = ['GET'])
 def obtenirDadesDispositius():
     """
@@ -842,7 +961,7 @@ def obtenirCanvisReg():
                 {
                     "idDispositiu": dada[0],
                     "dataHora": dada[1],
-                    "canviReg": dada[2],
+                    "estatReg": dada[2],
                 }
                 for dada in dades
             ]
@@ -915,6 +1034,80 @@ def obtenirUltimReg():
     else:
         dades_formatejades = [{"dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg}]
         return jsonify({'success': True, 'dades': dades_formatejades})
+    
+@app.route('/obtenirUltimRegUsuari', methods = ['GET'])
+def obtenirUltimRegUsuari():
+    """
+    Endpoint de Flask per obtenir les dades del últim reg de tots els dispositiu d'un usuari
+    """
+    try:
+        idUsuari = request.args.get('idUsuari')
+
+        if idUsuari is None:
+            return jsonify({'success': False, 'error': f"'idUsuari' no especificat"}), 400
+
+        try: 
+            params_lastRegUsuari = (idUsuari, )
+            query_lastRegUsuari = """SELECT canv.idDispositiu, canv.estatReg, canv.dataHora, disp.nomDispositiu
+                            FROM (SELECT idDispositiu, estatReg, MAX(dataHora) AS dataHora 
+                                FROM canvisReg 
+                                WHERE estatReg = 1 
+                                GROUP BY idDispositiu) AS canv
+                            INNER JOIN dispositius AS disp
+                                ON disp.id = canv.idDispositiu
+                            WHERE disp.idUsuariPropietari = %s 
+                                AND estatReg = 1
+                            """
+            dades_lastRegUsuari = db.executaQuery(query_lastRegUsuari, params_lastRegUsuari)
+
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"Error al consultar la hora del últim canviReg dels dispositius d'un usuari: {str(e)}"}), 500
+
+        else:
+            if len(dades_lastRegUsuari) == 0: # no s'ha regat mai
+                idDispositiu = ""
+                nomDispositiu = ""
+                dataHoraIniciReg = ""
+                dataHoraFiReg = ""
+                dades_formatejades = [{"idDispositiu": idDispositiu, "nomDispositiu": nomDispositiu, "dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg}]
+                return jsonify({'success': True, 'dades': dades_formatejades})
+
+            else:
+                dades_formatejades = []
+                for ultimaDadaDisp in dades_lastRegUsuari:
+                    idDispositiu = ultimaDadaDisp[0] 
+                    valorLastRegDisp = ultimaDadaDisp[1]
+                    dataHoraLastRegDisp = ultimaDadaDisp[2]
+                    nomDispositiu = ultimaDadaDisp[3]
+
+                    try: 
+                        params_lastlastReg = (idDispositiu, dataHoraLastRegDisp)
+                        query_lastlastReg = """SELECT estatReg, dataHora
+                                            FROM canvisReg 
+                                            WHERE idDispositiu = %s 
+                                            AND dataHora > %s 
+                                            AND estatReg = 0
+                                            LIMIT 1"""
+                        dades_lastlastReg = db.executaQuery(query_lastlastReg, params_lastlastReg)
+                        
+                        
+                    except Exception as e:
+                        return jsonify({'success': False, 'error': f"Error al consultar la hora de la ultima parada de reg: {str(e)}"}), 500
+                    
+                    else:
+                        if len(dades_lastlastReg) == 0: # s'ha començat a regar però no s'ha acabat
+                            dataHoraIniciReg = dataHoraLastRegDisp
+                            dataHoraFiReg = ""
+                            dades_formatejades.append({"idDispositiu": idDispositiu, "nomDispositiu": nomDispositiu, "dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg})
+                        else: # s'ha començat i acabat de regar
+                            dataHoraIniciReg = dataHoraLastRegDisp
+                            dataHoraFiReg = dades_lastlastReg[0][1]
+                            dades_formatejades.append({"idDispositiu": idDispositiu, "nomDispositiu": nomDispositiu, "dataHoraInici": dataHoraIniciReg, "dataHoraFi": dataHoraFiReg})
+                    
+                return jsonify({'success': True, 'dades': dades_formatejades})                
+            
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
 
 @app.route('/obtenirUltimaDadaDispositiu', methods = ['GET'])
 def obtenirUltimaDadaDispositiu():
@@ -1003,7 +1196,7 @@ def obtenirUltimaDadaDispositiu():
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
-
+    
 @app.route('/obtenirModificacionsLlindars', methods = ['GET'])
 def obtenirModificacionsLlindars():
     """
@@ -1011,10 +1204,10 @@ def obtenirModificacionsLlindars():
     Si es demana d'un dispositiu, com que ja s'ha comunicat el canvi en el llindar, es borra de la llista.
     """
     try:
-        idDispositiu = request.args.get('idDispositiu')
-        if idDispositiu:
-            idDispositiu_int = int(idDispositiu)
-            posLlindarDispo = __posicio_llindarDispositiu(idDispositiu_int)
+        idHardcode = request.args.get('idHardcode')
+                
+        if idHardcode:
+            posLlindarDispo = __posicio_llindarDispositiu(idHardcode)
             if posLlindarDispo == -1: # el dispositiu no té un llindar modificat guardat
                 return jsonify({'success': True, 'dades': []})
             else:

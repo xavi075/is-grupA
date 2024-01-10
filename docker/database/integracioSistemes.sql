@@ -1,8 +1,3 @@
-CREATE DATABASE integracioSistemes; --crear db
-USE integracioSistemes; --establir-la com a predeterminada
-SET autocommit = 0; -- per evitar que cada sentència es tracti com una transacció independent
-
--- crear les taules necessàries
 CREATE TABLE usuaris ( 
     id INT AUTO_INCREMENT PRIMARY KEY, 
     email VARCHAR(100) UNIQUE NOT NULL,
@@ -45,9 +40,6 @@ CREATE TABLE provesDoctests (
     dadaProva DECIMAL (5, 2)
 );
 
--- afegim triggers
-
--- triggers per verificar que no hi hagi més d'un dispositiu amb el mateix nom per al mateix usuari
 DELIMITER //
 CREATE TRIGGER verifica_nomDispositiu_usuari_insert
 BEFORE INSERT ON dispositius
@@ -87,7 +79,6 @@ BEGIN
 END 
 //
 
--- trigger per verificar que els estats del reg inserit només siguin 0 o 1
 CREATE TRIGGER verifica_estatReg
 BEFORE INSERT ON canvisReg
 FOR EACH ROW
@@ -99,8 +90,6 @@ BEGIN
 END;
 //
 
--- trigger per verificar que s'insereixi un usuari amb email repetit, solucionant d'aquesta manera
--- problemes amb el auto_increment del id
 CREATE TRIGGER verifica_emailRepetit
 BEFORE INSERT ON usuaris
 FOR EACH ROW
@@ -118,8 +107,6 @@ BEGIN
 END;
 //
 
--- trigger per verificar que s'insereixi un dispositiu amb idHardcode repetit, solucionant d'aquesta manera
--- problemes amb el auto_increment del id
 CREATE TRIGGER verifica_idHardcodeRepetit
 BEFORE INSERT ON dispositius
 FOR EACH ROW
