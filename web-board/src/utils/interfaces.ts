@@ -61,3 +61,11 @@ export interface IWaterChanges {
     estatReg: boolean
   }>
 }
+
+export interface IProfile {
+  success: boolean,
+  dades: Array<{
+    nomUsuari: string
+    dataCreacioUsuari: string
+  }>
+}

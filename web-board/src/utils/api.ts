@@ -1,7 +1,6 @@
-import { ILogged, ILastInfo, IUserDevices, IRegister, IData, IAvailableDevices, IWaterChanges } from "./interfaces";
+import { ILogged, ILastInfo, IUserDevices, IRegister, IData, IAvailableDevices, IWaterChanges, IProfile } from "./interfaces";
 
-// const ENDPOINT = 'https://api.is.ferrancasanovas.cat';
-const ENDPOINT = "http://localhost:5000"
+const ENDPOINT = 'https://api.is.ferrancasanovas.cat';
 
 export function loginRequest(emailUsuari:string, contrasenya: string): Promise<ILogged> {
   return fetch(`${ENDPOINT}/verificaLogIn`, {
@@ -224,3 +223,16 @@ export function getWaterChanges (deviceId: number, startDate:string, finalDate:s
   }
 }
 
+export function getUserProfile (usernameId: string): Promise<IProfile> {
+    return fetch(`${ENDPOINT}/obtenirUsuaris?idUsuari=${usernameId}`, {
+        method: 'GET',
+        headers: {
+            "Content-type": "application/json"
+        },
+    }).then(res => {
+        if (!res.ok) throw new Error('Response is not OK')
+        return res.json()
+    }).then( res => {
+        return res 
+    })
+}
