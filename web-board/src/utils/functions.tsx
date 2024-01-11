@@ -1,9 +1,11 @@
 // functions module
 import { format } from 'date-fns';
+import moment from 'moment';
+ 
 
 export const convertDate = (date: string) => {
-  const DateObject = new Date(date);
-  const formattedDate = format(DateObject, 'dd-MM-yyyy HH:mm:ss')
+  const DateObject = moment(date, 'ddd, DD MMM YYYY HH:mm:ss [GMT]');
+  const formattedDate = DateObject.format('DD-MM-yyyy HH:mm:ss');
   return formattedDate; 
 }
 

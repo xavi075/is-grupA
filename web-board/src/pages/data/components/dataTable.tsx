@@ -59,7 +59,7 @@ const DataTable =  (props: {deviceId: number | undefined}) => {
       return [];
     }
 
-    return Data.dades.map((element) => ({
+    return Data.dades.slice().reverse().map((element) => ({
       date: moment(element.dataHora, 'ddd, DD MMM YYYY HH:mm:ss [GMT]').format('MMM D, HH:mm:ss'),
       humidity: element.dadaHum,
       temperature: element.dadaTemp
@@ -114,7 +114,7 @@ useEffect(() => {
           </tr>
       </thead>
       <tbody>
-        {Data?.dades.reverse().map((mostra, index) => (
+        {Data?.dades.slice().reverse().map((mostra, index) => (
           <tr key={`Taula1${index}`}>
             <td>{convertDate(mostra.dataHora)}</td>
             <td>{mostra.dadaHum}</td>
@@ -141,7 +141,7 @@ useEffect(() => {
           </tr>
       </thead>
       <tbody>
-        {WaterChanges?.dades.reverse().map((mostra, index) => (
+        {WaterChanges?.dades.slice().reverse().map((mostra, index) => (
           <tr key={`Taula2-${index}`}>
             <td>{convertDate(mostra.dataHora)}</td>
             <td>{mostra.estatReg ? "Inici de reg": "Final de reg"}</td>
