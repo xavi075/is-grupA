@@ -1,0 +1,65 @@
+.current-parameters {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+
+}
+
+.edit-link {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #007ABF;
+  color: #fff;
+  border: 2px solid #007ABF;
+  border-radius: 20px; 
+  text-decoration: none;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.edit-link:hover {
+  background-color: #ffffff;
+  border-color: #007ABF;
+  color: #007ABF;
+}
+
+.change-parameters-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.rang-input {
+  margin-bottom: 20px;
+}
+
+label {
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.rang-input input {
+  width: 70vw;
+  height: 20px;
+  appearance: none; 
+  background: #ddd; 
+  border-radius: 10px; 
+  outline: none; 
+  transition: background 0.3s ease;
+}
+
+.rang-input input:hover {
+  background: #ccc; 
+}
+
+input::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #007bff;
+  border-radius: 50%; 
+  cursor: pointer; 
+}
+
+
+  

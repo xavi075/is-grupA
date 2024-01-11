@@ -1,0 +1,41 @@
+.account-box {
+  box-sizing: border-box;
+  width: 95%;
+  margin: auto;
+  margin-top: 10px;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+}
+
+.account-box h2 {
+  color: #007ABF;
+}
+
+.logout-link {
+  display: inline-block;
+  margin-top: 30px;
+  padding: 10px 20px;
+  color: #fff;
+  background-color: #dc3545;
+  text-decoration: none;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.logout-link:hover {
+  background-color: #ffffff;
+  color: #dc3545;
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .account-box {
+    padding: 15px;
+  }
+}
+  

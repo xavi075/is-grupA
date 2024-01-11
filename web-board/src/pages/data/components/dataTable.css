@@ -1,0 +1,44 @@
+.date-change-link {
+  display: inline-block;
+  margin: 10px 10px 10px 10px;
+  padding: 10px 20px;
+  color: #fff;
+  background-color: #007ABF;
+  text-decoration: none;
+  border: 1px solid #007ABF;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.date-change-link:hover {
+  background-color: #ffffff;
+  color: #007ABF;
+  text-decoration: underline;
+}
+
+.table-data {
+  border-collapse: collapse;
+}
+
+.table-data th, .table-data td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+.table-scroll-container {
+  max-height: 25em; 
+  overflow-y: auto;
+}
+
+@media (max-width: 376px) {
+  .table-data td, .table-data th{
+    font-size: 12px;
+  }
+
+  .date-change-link{
+    display: flex;
+    justify-content: center;
+  }
+}

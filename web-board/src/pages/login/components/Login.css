@@ -1,0 +1,79 @@
+.form-container {
+  display: flex;
+  align-items: center;
+  text-align: center;
+}
+
+.login-container{
+  margin-top: 100px;
+  height: 60vh;
+  justify-content: center;
+}
+
+.password-container{
+  margin: 10px 20px 20px 30px;
+  padding-top: 20px;
+  justify-content: left;
+  text-align: left;
+}
+
+.custom-form {
+  width: 300px;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.password-form {
+  width: 290px;
+  margin-left: -20px;
+}
+
+.custom-form h2 {
+  color: #007ABF;
+}
+
+.incorrect-message {
+  color: #dc3545;
+}
+
+.custom-label {
+  font-size: 16px;
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.custom-form,.custom-input {
+  padding: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.form-button {
+  font-size: 16px;
+  background-color: #007ABF;
+  color: #fff;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.form-button:hover {
+  background-color: #45b5f7;
+}
+
+.login-register{
+  font-size: 16px;
+  padding: 20px 10px;
+  text-decoration: underline;
+
+}
+
+.login-register span:hover{
+  color: #0071b3;
+  cursor: pointer;
+}
