@@ -71,21 +71,12 @@ void sendMessage(uint8_t destinationAddress[], byte msgIdResponse, String outgoi
   
   LoRa.write(outgoing.length());
 
-  
   // xifrem el paquet
-  // char outgoingXifrat[outgoing.length()];
-  // Serial.println(outgoing);
-  // encrypt_xor(outgoing.c_str(), outgoingXifrat, 0xAA);
-  // Serial.println(outgoing);
-  // Serial.println(outgoingXifrat);
+  char outgoingXifrat[outgoing.length()];
+  encrypt_xor(outgoing.c_str(), outgoingXifrat, 0xAA);
   
-  //char outgoingDesxifrat[outgoing.length()];
-  //decrypt_xor(outgoingXifrat, outgoingDesxifrat, 0xAA);
-  //Serial.println(outgoingDesxifrat);
-
-
-  LoRa.print(outgoing);
-  
+  //LoRa.print(outgoing);
+  LoRa.print(outgoingXifrat);
   
   LoRa.endPacket();
   
@@ -119,25 +110,26 @@ void onReceive(int packetSize){
       incoming += (char)LoRa.read();
     }
 
+    // desxifrem el paquet rebut
+    char incomingDesxifrat_array[incoming.length()];
+    decrypt_xor(incoming.c_str(), incomingDesxifrat_array, 0xAA);
+    String incomingDesxifrat = String(incomingDesxifrat_array);
+
     // received a packet
     Serial.print("Received packet: ");
-    Serial.println(incoming);
+    //Serial.println(incoming);
+    Serial.println(incomingDesxifrat);
     
     // verifiquem el CRC rebut i la longitud indicada
-    if (!verificarCRC(incoming.c_str(), incomingLength, incomingCRC)) {
+    if (!verificarCRC(incomingDesxifrat.c_str(), incomingLength, incomingCRC)) {
       Serial.print("CRC incorrecte: ");
       for (int i = 0; i < 4; i++)
         Serial.print(incomingCRC[i], HEX);
       return;
     }
 
-    // if (strcmp(incoming.c_str(), "hello") == 0)  {
-    //   digitalWrite(4,LOW);
-    //   sendMessage(senderAddress, incomingMsgId, "Bye");
-    // }
-
     // si el missatge és "preg" demanem si hi ha algun canvi de paràmetres
-    if (strcmp(incoming.c_str(), "preg") == 0)  {
+    if (strcmp(incomingDesxifrat.c_str(), "preg") == 0)  {
       // enviem missatge pel port sèrie
       Serial.print("?-");
       printaAddress(senderAddress);
@@ -153,10 +145,10 @@ void onReceive(int packetSize){
     }
 
     // si el missatge comença per "d-", significa que ens està enviant les dades d'humitat i temperatura
-    else if (incoming.startsWith("d-"))  {
+    else if (incomingDesxifrat.startsWith("d-"))  {
       // trobem la posició de "H:" i de "T:"
-      int posH = incoming.indexOf("H:");
-      int posT = incoming.indexOf("T:"); 
+      int posH = incomingDesxifrat.indexOf("H:");
+      int posT = incomingDesxifrat.indexOf("T:"); 
       
       // comprova si el format és l'esperat
       if (posH == -1 || posT == -1) return;
@@ -165,7 +157,7 @@ void onReceive(int packetSize){
       Serial.print("d-");
       printaAddress(senderAddress);
       Serial.print("-");
-      Serial.print(incoming.substring(posH));
+      Serial.print(incomingDesxifrat.substring(posH));
       Serial.println();
 
       // llegim la resposta
@@ -181,9 +173,9 @@ void onReceive(int packetSize){
     }
 
     // si el missatge comença per -r, signigica que està enviant l'estat del reg
-    else if (incoming.startsWith("r-"))  {
+    else if (incomingDesxifrat.startsWith("r-"))  {
       // obtenim la subcadena posterior a "r-""
-      String estat = incoming.substring(2);
+      String estat = incomingDesxifrat.substring(2);
 
       // enviem missatge pel port sèrie
       Serial.print("r-");

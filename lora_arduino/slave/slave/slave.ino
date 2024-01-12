@@ -299,7 +299,13 @@ void sendMessage(String outgoing){
 
   LoRa.write(outgoing.length());
 
-  LoRa.print(outgoing);
+  // xifrem el paquet
+  char outgoingXifrat[outgoing.length()];
+  encrypt_xor(outgoing.c_str(), outgoingXifrat, 0xAA);
+  
+  //LoRa.print(outgoing);
+  LoRa.print(outgoingXifrat);
+
   LoRa.endPacket();
 
   // guardem el missatge i el msgId enviat i marquem que no s'ha respòs
@@ -346,7 +352,13 @@ void repetirMissatge() {
 
   LoRa.write(lastOutgoing.length());
 
-  LoRa.print(lastOutgoing);
+  // xifrem el paquet
+  char lastOutgoingXifrat[lastOutgoing.length()];
+  encrypt_xor(lastOutgoing.c_str(), lastOutgoingXifrat, 0xAA);
+  
+  //LoRa.print(outgoing);
+  LoRa.print(lastOutgoingXifrat);
+ 
   LoRa.endPacket();
 
   // activem la repetició del missatge per si el master continua sense respondre
@@ -383,16 +395,17 @@ void onReceive(int packetSize){
     }
 
     // desxifrem el paquet rebut
-    // char outgoingDesxifrat[incoming.length()];
-    // decrypt_xor(incoming.c_str(), outgoingDesxifrat, 0xAA);
-    // Serial.println(outgoingDesxifrat);
+    char incomingDesxifrat_array[incoming.length()];
+    decrypt_xor(incoming.c_str(), incomingDesxifrat_array, 0xAA);
+    String incomingDesxifrat = String(incomingDesxifrat_array);
 
     // received a packet
     Serial.print("Received packet: ");
-    Serial.println(incoming);
+    //Serial.println(incoming);
+    Serial.println(incomingDesxifrat);
     
     // verifiquem el CRC rebut i la longitud indicada
-    if (!verificarCRC(incoming.c_str(), incomingLength, incomingCRC)) {
+    if (!verificarCRC(incomingDesxifrat.c_str(), incomingLength, incomingCRC)) {
       Serial.print("CRC incorrecte: ");
       for (int i = 0; i < 4; i++)
         Serial.print(incomingCRC[i], HEX);
@@ -419,10 +432,10 @@ void onReceive(int packetSize){
       case wait_resp:
         Serial.println(num_comunicacions_llegirDades_restants);
 
-        if (strcmp(incoming.c_str(), "NOASS") == 0)  {
+        if (strcmp(incomingDesxifrat.c_str(), "NOASS") == 0)  {
           acabaComunicacioMaster();
         }
-        else if (strcmp(incoming.c_str(), "NO") == 0)  {
+        else if (strcmp(incomingDesxifrat.c_str(), "NO") == 0)  {
           if (num_comunicacions_llegirDades_restants == 0) {
             num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades - 1;
             iniciaLectura();
@@ -432,12 +445,12 @@ void onReceive(int packetSize){
             acabaComunicacioMaster();
           }
         }
-        else if (incoming.startsWith("CP-")) {
+        else if (incomingDesxifrat.startsWith("CP-")) {
           // Obtenim el llidarMin i el llindarMax a modificar
-          int posMin = incoming.indexOf("min:");
-          int posMax = incoming.indexOf("max:");
-          float llindarMin = incoming.substring(posMin + 4, posMax).toFloat();
-          float llindarMax = incoming.substring(posMax + 4).toFloat();  
+          int posMin = incomingDesxifrat.indexOf("min:");
+          int posMax = incomingDesxifrat.indexOf("max:");
+          float llindarMin = incomingDesxifrat.substring(posMin + 4, posMax).toFloat();
+          float llindarMax = incomingDesxifrat.substring(posMax + 4).toFloat();  
 
           canviaLlindars(llindarMin, llindarMax);
           
@@ -454,7 +467,7 @@ void onReceive(int packetSize){
 
       case wait_OK_comprovacioReg:
 
-        if (strcmp(incoming.c_str(), "OK") == 0)  { // rebem la confirmació
+        if (strcmp(incomingDesxifrat.c_str(), "OK") == 0)  { // rebem la confirmació
           
           if (valorHumitat < llindarMinReg) {
             enviaEstatReg("ON");
@@ -471,7 +484,7 @@ void onReceive(int packetSize){
 
       case wait_OK_bombaON:
 
-        if (strcmp(incoming.c_str(), "OK") == 0)  { // rebem la confirmació
+        if (strcmp(incomingDesxifrat.c_str(), "OK") == 0)  { // rebem la confirmació
           engegaBomba();
           setup_tmr0(interval_LecturaDades_bombaON_s, bombaEngegada_to_llegintDades);
           // modifiquem l'estat
@@ -480,7 +493,7 @@ void onReceive(int packetSize){
 
       case wait_OK_bombaOFF:
 
-        if (strcmp(incoming.c_str(), "OK") == 0)  { // rebem la confirmació
+        if (strcmp(incomingDesxifrat.c_str(), "OK") == 0)  { // rebem la confirmació
           paraBomba();
           acabaComunicacioMaster();
         }
