@@ -144,14 +144,12 @@ void onReceive(int packetSize){
       Serial.println();
 
       // llegim la resposta
-      //String resposta = llegeixPortSerie();
+      String resposta = llegeixPortSerie();
     
       // retornem la resposta al slave. La resposta pot ser "NO", "NOASS" o semblant a "CP-min:45.0max:70.6"
-      // sendMessage(senderAddress, incomingMsgId, resposta.c_str());
-      // Serial.print("Sending packet: ");
-      // Serial.println(resposta);
-
-      sendMessage(senderAddress, incomingMsgId, "NO");
+      sendMessage(senderAddress, incomingMsgId, resposta.c_str());
+      Serial.print("Sending packet: ");
+      Serial.println(resposta);
     }
 
     // si el missatge comença per "d-", significa que ens està enviant les dades d'humitat i temperatura
@@ -170,17 +168,16 @@ void onReceive(int packetSize){
       Serial.print(incoming.substring(posH));
       Serial.println();
 
-      // // llegim la resposta
-      // String resposta = llegeixPortSerie();
+      // llegim la resposta
+      String resposta = llegeixPortSerie();
       
-      // // si ha anat bé, informem al slave enviant "OK"
-      // if (strcmp(resposta.c_str(), "OK") == 0) {
-      //   sendMesssage(senderAddress, incomingMsgId, resposta.c_str());
-      //   Serial.print("Sending packet: ");
-      //   Serial.println(resposta);
-      // }
+      // si ha anat bé, informem al slave enviant "OK"
+      if (strcmp(resposta.c_str(), "OK") == 0) {
+        sendMessage(senderAddress, incomingMsgId, resposta.c_str());
+        Serial.print("Sending packet: ");
+        Serial.println(resposta);
+      }
 
-      sendMessage(senderAddress, incomingMsgId, "OK");
     }
 
     // si el missatge comença per -r, signigica que està enviant l'estat del reg
@@ -195,19 +192,18 @@ void onReceive(int packetSize){
       Serial.print(estat);
       Serial.println();
 
-      // // llegim la resposta
-      // String resposta = llegeixPortSerie();
-      // Serial.print("RESPOSTA: ");
-      // Serial.println(resposta);
+      // llegim la resposta
+      String resposta = llegeixPortSerie();
+      Serial.print("RESPOSTA: ");
+      Serial.println(resposta);
 
-      // // si ha anat bé, informem al slave enviant "OK"
-      // if (strcmp(resposta.c_str(), "OK") == 0) {
-      //   sendMesssage(senderAddress, incomingMsgId, resposta.c_str());
-      //   Serial.print("Sending packet: ");
-      //   Serial.println(resposta);
-      // }
+      // si ha anat bé, informem al slave enviant "OK"
+      if (strcmp(resposta.c_str(), "OK") == 0) {
+        sendMessage(senderAddress, incomingMsgId, resposta.c_str());
+        Serial.print("Sending packet: ");
+        Serial.println(resposta);
+      }
 
-      sendMessage(senderAddress, incomingMsgId, "OK");
     }
 
     LoRa.receive();

@@ -29,8 +29,8 @@ uint8_t localAddress[4] = {0xAA, 0x00, 0x00, 0x00}; // adreça del dispositiu
 uint8_t masterAddress[4] = {0x00, 0x00, 0x00, 0x00}; // adreça del dispositiu master
 int interval_s = 10; // interval de temps entre comunicacions amb master
 
-const int num_comunicacions_llegirDades = 2; // variable per indicar cada quantes comunicacions amb el master es llegeixen dades
-int num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades; // comunicacions restants per a llegir dades
+const int num_comunicacions_llegirDades = 6; // variable per indicar cada quantes comunicacions amb el master es llegeixen dades
+int num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades - 1; // comunicacions restants per a llegir dades
 
 volatile uint8_t msgId = 0; // comptador dels missatges de sortida
 volatile uint8_t lastMsgId; // variable per emmagatzemar l'últim identificador de missatge enviat
@@ -45,11 +45,14 @@ volatile bool comunicacioMasterFlag = false;
 volatile float llindarMinReg; // llindar a partir del qual es comença a regar
 volatile float llindarMaxReg; // llindar a partir del qual es para de regar
 
-const int num_mostresHumitat = 128; // nombre total de mostres d'humitat que es llegiran per cada lectura
+const int num_mostresHumitat = 100; // nombre total de mostres d'humitat que es llegiran per cada lectura
 volatile int num_mostresHumitat_restants = num_mostresHumitat - 1; // per emmagatzemar el nombre de mostres d'humitat que queden per acabar la lectura
 volatile int contenidor_valorHumitat; // variable en la qual es sumaran totes les mostres d'humitat per a després realitzar la mitjana
 volatile bool dadesLlegidesFlag; // flag per indicar que s'han llegit totes les mostres d'humitat
 float valorHumitat; // variable per emmagatzemar el valor d'humitat llegit
+
+const int valorMaximHumitat = 223; // valor d'humitat amb sensor totalment sec (referència 0% d'humitat)
+const int valorMinimHumitat = 45; // valor d'humitat amb sensor totalment mullat (referència 100% d'humitat)
 
 const int pin_temperatura = 14; // pin per on es llegeix la temperatura
 OneWire oneWire(pin_temperatura);
@@ -143,10 +146,11 @@ void bombaEngegada_to_llegintDades() {
 // inicia la lectura de dades d'humitat. Això implica engegar el modulator i les interrupcions del timer 2
 void iniciaLectura() {
   modulator_set(true);
-  tmr2_set(8);
+  tmr2_set(64);
   start_ADC();
 
   dadesLlegidesFlag = false;
+  contenidor_valorHumitat = 0;
   num_mostresHumitat_restants = num_mostresHumitat - 1;
 }
 
@@ -201,9 +205,9 @@ void setup() {
   // iniciem el el timer0 per a la comunicació amb el master 
   setup_tmr0(interval_s, iniciaComunicacioMaster);
 
-  // iniciem el modulator, el timer2 i l'ADC (utilitzats en la lectura de dades d'humitat)
+  // iniciem el modulator, el timer2 inicialment parat i l'ADC (utilitzats en la lectura de dades d'humitat)
   modulator_init();
-  setup_tmr2(124, 8);
+  setup_tmr2(124, 0);
   setup_ADC(1,5,16);
 
   // per llegir la temperatura
@@ -229,9 +233,7 @@ void setup() {
   pinMode(pin_bomba, OUTPUT);
   pinMode(17, OUTPUT);
   digitalWrite(17, HIGH);
-  
-  pinMode(4,OUTPUT);
-  digitalWrite(4,HIGH);
+
 }
 
 void loop() {
@@ -248,7 +250,8 @@ void loop() {
       float avg_humitat = contenidor_valorHumitat / num_mostresHumitat;
 
       // càlcul per obtenir l'humitat en percentatge
-      valorHumitat = ((255 - avg_humitat)/255)*100;
+      valorHumitat = ((valorMaximHumitat - avg_humitat)/(valorMaximHumitat - valorMinimHumitat))*100;
+      if (valorHumitat < 0) valorHumitat = 0;
       Serial.println(valorHumitat);
 
       // obtenim la temperatura
@@ -321,11 +324,11 @@ void repetirMissatge() {
   if (lastMsgRespos_flag) return;
 
   // comprovem si el missatge s'ha repetit més de 5 cops, en aquest cas tanquem la comunicació amb el master
+  num_msgRep++;
   if (num_msgRep >= 5) {
     acabaComunicacioMaster();
     return;
   }
-  else num_msgRep++;
 
   Serial.print("Repeating packet: ");
   Serial.println(lastMsgId);
@@ -421,7 +424,7 @@ void onReceive(int packetSize){
         }
         else if (strcmp(incoming.c_str(), "NO") == 0)  {
           if (num_comunicacions_llegirDades_restants == 0) {
-            num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades;
+            num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades - 1;
             iniciaLectura();
             canviaEstat(llegintDades);
           }
@@ -439,7 +442,7 @@ void onReceive(int packetSize){
           canviaLlindars(llindarMin, llindarMax);
           
           if (num_comunicacions_llegirDades_restants == 0) {
-            num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades;
+            num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades - 1;
             iniciaLectura();
             canviaEstat(llegintDades);
           }
