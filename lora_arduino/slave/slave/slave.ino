@@ -27,7 +27,7 @@ volatile estats_slave estat;
 
 uint8_t localAddress[4] = {0xAA, 0x00, 0x00, 0x00}; // adreça del dispositiu
 uint8_t masterAddress[4] = {0x00, 0x00, 0x00, 0x00}; // adreça del dispositiu master
-int interval_s = 10; // interval de temps entre comunicacions amb master
+int interval_s = 6000; // interval de temps entre comunicacions amb master
 
 const int num_comunicacions_llegirDades = 6; // variable per indicar cada quantes comunicacions amb el master es llegeixen dades
 int num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades - 1; // comunicacions restants per a llegir dades
