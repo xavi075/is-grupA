@@ -25,11 +25,7 @@ EXPOSE 5000 3000
 
 WORKDIR /home
 
-RUN mkdir -p /home/basedades
-
-WORKDIR /home/basedades
-
-RUN git clone https://github.com/xavi075/is-grupA.git -b apiDB
+RUN git clone https://github.com/xavi075/is-grupA.git
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y mysql-server && \
     service mysql start && \
@@ -51,13 +47,7 @@ RUN service mysql start && \
     mysql -u arnau -p${MYSQL_ARNAU_PASSWORD} -e "SET autocommit = 0;" && \
     mysql -u arnau -p${MYSQL_ARNAU_PASSWORD} --database=integracioSistemes < integracioSistemes.sql
 
-RUN mkdir -p /home/web
-
-WORKDIR /home/web
-
-RUN git clone https://github.com/xavi075/is-grupA.git -b apiWEB
-
-WORKDIR /home/web/is-grupA/web-board
+WORKDIR /home/is-grupA/web-board
 
 RUN installWEBlibraries.sh
 

@@ -13,7 +13,7 @@ services:
       MYSQL_USER: arnau
       MYSQL_PASSWORD: isgrupA
       MYSQL_DB: integracioSistemes
-    command: sh -c "service ssh start && service mysql stop && usermod -d /var/lib/mysql/ mysql && service mysql start && cd /home/basedades/is-grupA/db/src && python3 app.py"
+    command: sh -c "service ssh start && service mysql stop && usermod -d /var/lib/mysql/ mysql && service mysql start && cd /home/is-grupA/db/src && python3 app.py"
     restart: on-failure:3
 
   mysql:
@@ -30,7 +30,7 @@ services:
 
   webboard:
     image: isgrupa
-    command: sh -c "service ssh start && cd /home/web/is-grupA/web-board && node -v && npm -v && npm start"
+    command: sh -c "service ssh start && cd /home/is-grupA/web-board && node -v && npm -v && npm start"
     ports:
       - "5001:3000"
       - "5003:22"
