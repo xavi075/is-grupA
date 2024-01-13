@@ -116,6 +116,7 @@ void iniciaComunicacioMaster() {
 void acabaComunicacioMaster() {
   if (num_comunicacions_llegirDades_restants > 0) num_comunicacions_llegirDades_restants--;
 
+  paraBomba();
   comunicacioMasterFlag = false;
   canviaEstat(sleep);
   setup_tmr0(interval_s, iniciaComunicacioMaster);
