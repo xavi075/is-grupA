@@ -253,6 +253,7 @@ void loop() {
       // càlcul per obtenir l'humitat en percentatge
       valorHumitat = ((valorMaximHumitat - avg_humitat)/(valorMaximHumitat - valorMinimHumitat))*100;
       if (valorHumitat < 0) valorHumitat = 0;
+      else if (valorHumitat > 100) valorHumitat = 100;
       Serial.println(valorHumitat);
 
       // obtenim la temperatura

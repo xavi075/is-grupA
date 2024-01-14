@@ -37,7 +37,6 @@ void setup() {
 
   Serial.println("LoRa Master");
 
-  //LoRa.setPins(10,5,2); //Per sensor
   while(!LoRa.begin(866E6));
   Serial.println("Starting LoRa!");
 
@@ -52,8 +51,6 @@ void setup() {
 }
 
 void loop() {
-  // delay(5000);
-  // Serial.println("Nada por aqui");
 }
 
 // per enviar un missatge a qualsevol esclau responent a un missatge per LoRa

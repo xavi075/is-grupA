@@ -13,7 +13,7 @@ def comprovaDispositiuExistent(idDispo_hardcoded):
     """
     try:
         # Realitzar una petició per obtenir la informació del dispositiu
-        url = "http://api.is.ferrancasanovas.cat/comprovacioDispositiuInserit?idHardcode=" + idDispo_hardcoded 
+        url = "https://api.is.ferrancasanovas.cat/comprovacioDispositiuInserit?idHardcode=" + idDispo_hardcoded 
         response = requests.get(url)
 
         # verificar si la sol·licitud és exitosa (codi d'estat 200)
@@ -34,7 +34,7 @@ def insereixDispositiu(idDispo_hardcoded):
     """
     try:
         # Realitzar una petició per inserir el dispositiu
-        url = "http://api.is.ferrancasanovas.cat/inserirDispositiu"
+        url = "https://api.is.ferrancasanovas.cat/inserirDispositiu"
         dades_json = {
             "idHardcode": idDispo_hardcoded,
             "llindarMinimReg": 50, # canviar per valors reals
@@ -57,7 +57,7 @@ def comprovaModificacionsLlindars(idDispo_hardcoded):
     """
     try:
         # Realitzar una petició per obtenir la informació del dispositiu
-        url = "http://api.is.ferrancasanovas.cat/obtenirModificacionsLlindars?idHardcode=" + idDispo_hardcoded
+        url = "https://api.is.ferrancasanovas.cat/obtenirModificacionsLlindars?idHardcode=" + idDispo_hardcoded
         response = requests.get(url)
 
         # verificar si la sol·licitud és exitosa (codi d'estat 200)
@@ -83,7 +83,7 @@ def enviaDades(idDispo_hardcoded, humitat, temperatura):
     """
     try:
         # Realitzar una petició per inserir la dada
-        url = "http://api.is.ferrancasanovas.cat/inserirDada"
+        url = "https://api.is.ferrancasanovas.cat/inserirDada"
         dades_json = {
             "idHardcode": idDispo_hardcoded,
             "dadaHum": humitat,
@@ -106,7 +106,7 @@ def enviaEstatReg(idDispo_hardcoded, estatReg):
     """
     try:
         # Realitzar una petició per inserir la dada
-        url = "http://api.is.ferrancasanovas.cat/inserirEstatReg"
+        url = "https://api.is.ferrancasanovas.cat/inserirEstatReg"
         dades_json = {
             "idHardcode": idDispo_hardcoded,
             "estatReg": estatReg
