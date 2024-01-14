@@ -1,10 +1,8 @@
-#include "tmr1.h"
+#include "tmr0.h"
 // #include <avr/io.h>
 // #include <avr/interrupt.h>
 #include <Arduino.h>
 #include <stdio.h>
-#include "printf2serial.h"
-
 
 static uint16_t n_segons;
 static volatile uint16_t n_segons_restant;
@@ -36,4 +34,9 @@ void setup_tmr0(uint16_t time, tmr0_callback_t f) {
     TCCR0B = _BV(CS01) | _BV(CS00); // mode CTC i prescaler 64
     OCR0A = 248; 
     TIMSK0 = _BV(OCIE0A); 
+}
+
+void stop_tmr0() {
+    // Parar el timer
+    TCCR0B = 0;
 }
