@@ -1,7 +1,6 @@
 // #include <avr/io.h>
 // #include <stdbool.h>
-// #include <Arduino.h>
-#include "gpio_device.h"
+#include <Arduino.h>
 
 // pin_t ENTRADA_SENSOR;
 

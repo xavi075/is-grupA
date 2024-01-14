@@ -1,337 +1,523 @@
-// Lora amb c
-#include "lora.h"
-#include "lora_mem.h"
-#include "spi.h"
+#include <SPI.h>
+#include <LoRa.h>
+#include <avr/sleep.h>
+#include <avr/power.h>
 
-// Lora amb ino
-// #include <SPI.h>
-// #include "LoRa.h"
-
-
-
-#include <Arduino.h>
-#include "modulator.h"
-// #include <avr/interrupt.h>
-// #include <avr/io.h>//it includes <avr/sfr_defs.h>, <avr/portpins.h>, <avr/common.h>, <avr/version.h>
-#include <stdint.h>
-// #include <stdbool.h>
-// #include <math.h>
-#include "serial_device.h"
-#include "adc.h"
-#include "tmr2.h"
-#include "tmr1.h"
-#include "utils.h"
-#include <stdio.h>
-#include "printf2serial.h"
-// #include <avr/sleep.h>
-#include <util/delay.h>
-// #include <avr/wdt.h>
-#include <string.h>
-#include "gpio_device.h"
-
+// per llegir el valor de la temperatura
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#include <LowPower.h>
+#include "adc.h"
+#include "modulator.h"
+#include "secure.h"
+#include "tmr0.h"
+#include "tmr2.h"
 
-#define N 128
-#define TEMPS 10
+// Definició dels estats que pot tenir el slave
+enum estats_slave {
+  sleep,
+  wait_resp,
+  llegintDades,
+  wait_OK_comprovacioReg,
+  wait_OK_bombaON,
+  wait_OK_bombaOFF,
+  bombaEngegada
+};
+volatile estats_slave estat;
 
+uint8_t localAddress[4] = {0xAA, 0x00, 0x00, 0x00}; // adreça del dispositiu
+uint8_t masterAddress[4] = {0x00, 0x00, 0x00, 0x00}; // adreça del dispositiu master
+int interval_s = 6000; // interval de temps entre comunicacions amb master
 
-volatile uint8_t value;
-// uint8_t temperatura;
+const int num_comunicacions_llegirDades = 6; // variable per indicar cada quantes comunicacions amb el master es llegeixen dades
+int num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades - 1; // comunicacions restants per a llegir dades
 
-const int pin_temperatura = 14;
+volatile uint8_t msgId = 0; // comptador dels missatges de sortida
+volatile uint8_t lastMsgId; // variable per emmagatzemar l'últim identificador de missatge enviat
+String lastOutgoing; // variable per emmagatzemar l'últim missatge
+volatile bool lastMsgRespos_flag = true; // flag per indicar si l'últim missatge enviat s'ha respos
+const int intervalRepeticioMsg_s = 10; // interval de temps per repetir missatges 
+volatile int num_msgRep; // comptador dels cops que s'ha repetit l'últim missatge
+
+// flag per indicar que s'està comunicant amb el master i que no s'ha d'entrar en mode sleep
+volatile bool comunicacioMasterFlag = false; 
+
+volatile float llindarMinReg; // llindar a partir del qual es comença a regar
+volatile float llindarMaxReg; // llindar a partir del qual es para de regar
+
+const int num_mostresHumitat = 100; // nombre total de mostres d'humitat que es llegiran per cada lectura
+volatile int num_mostresHumitat_restants = num_mostresHumitat - 1; // per emmagatzemar el nombre de mostres d'humitat que queden per acabar la lectura
+volatile int contenidor_valorHumitat; // variable en la qual es sumaran totes les mostres d'humitat per a després realitzar la mitjana
+volatile bool dadesLlegidesFlag; // flag per indicar que s'han llegit totes les mostres d'humitat
+float valorHumitat; // variable per emmagatzemar el valor d'humitat llegit
+
+const int valorMaximHumitat = 223; // valor d'humitat amb sensor totalment sec (referència 0% d'humitat)
+const int valorMinimHumitat = 45; // valor d'humitat amb sensor totalment mullat (referència 100% d'humitat)
+
+const int pin_temperatura = 14; // pin per on es llegeix la temperatura
 OneWire oneWire(pin_temperatura);
 DallasTemperature sensors(&oneWire);
+float valorTemperatura; // variable per emmagatzemar el valor de temperatura llegit
 
-static volatile float avg = 0;
-static volatile float avg_percent = 0;
-static uint8_t avg_str[20];
-volatile uint16_t i;
-volatile bool flag = false;
-volatile uint8_t n = N-1;
-volatile uint8_t n_timeout = 0;
+const int interval_LecturaDades_bombaON_s = 10; // interval de temps per llegir la humitat novament per comprovar si s'ha regat suficient
 
-// uint8_t llindar_min = 50;
-// uint8_t llindar_max = 75; 
+const int pin_bomba = 6; // pin per activar i desactivar la bomba
 
-// pin_t REGAR;
-// pin_t LED_R; 
+// canvia l'estat i el printa
+void canviaEstat(estats_slave nouEstat) {
+  estat = nouEstat;
+  printaEstat();
+}
 
-// typedef enum {regant, parat} estat_reg_t;
-// estat_reg_t estat_reg = parat;
+// printa l'estat actual. Únicament serveix per debugar
+void printaEstat() {
+  switch (estat) {
+    case sleep:
+      Serial.println("Estat sleep");
+      break;
+    case wait_resp:
+      Serial.println("Estat wait_resp");
+      break;
+    case llegintDades:
+      Serial.println("Estat llegintDades");
+      break;
+    case wait_OK_comprovacioReg:
+      Serial.println("Estat wait_OK_comprovacioReg");
+      break;
+    case wait_OK_bombaON:
+      Serial.println("Estat wait_OK_bombaON");
+      break;
+    case wait_OK_bombaOFF:
+      Serial.println("Estat wait_OK_bombaOFF");
+      break;
+    case bombaEngegada:
+      Serial.println("Estat bombaEngegada");
+      break;
+    default:
+      Serial.println("Estat no reconegut");
+      break;
+  }
+}
 
-void floatToList(float hum, float temp, uint8_t list[20]);
-void parse_lora( uint8_t * buf, uint8_t len, uint8_t status );
-void activa_lectura(void);
-void envia(void);
-void envia_resposta(void);
-void envia_temperatura(void);
-void desperta(void);
-void mode_sleep(void);
-void timeout(void);
+// per iniciar la comunicació amb el master. Surt de l'estat sleep i activa el flag
+// de comunicació amb el master
+void iniciaComunicacioMaster() {
+  comunicacioMasterFlag = true;
+  canviaEstat(wait_resp);
 
-typedef enum {inici, resp_si, resp_no, canviar_parametres, encendre_bomba, apagar_bomba, enviar_i_adormirse, resposta_rebuda} estat_t;
-volatile estat_t estat = inici;
+  sendMessage("preg");
 
-void setup(){
-  // pin_t REGAR;
-  // pin_t LED_R;
+  LoRa.receive();
+}
+
+// per finalitzar la comunicació amb el master. Posa el dispositiu amb mode sleep
+// i reinicia el timer 0 per tal de que torni a començar la comunicació.
+// Canvia al estat sleep i desactiva el flag de comunicació amb el master
+void acabaComunicacioMaster() {
+  if (num_comunicacions_llegirDades_restants > 0) num_comunicacions_llegirDades_restants--;
+
+  paraBomba();
+  comunicacioMasterFlag = false;
+  canviaEstat(sleep);
+  setup_tmr0(interval_s, iniciaComunicacioMaster);
+
+}
+
+// modifica els llindars de reg del dispositiu
+void canviaLlindars(float llindarMin, float llindarMax) {
+  Serial.println("Canviant llindars");
+  
+  llindarMinReg = llindarMin;
+  llindarMaxReg = llindarMax;
+
+  
+  Serial.print("llindarMin: ");
+  Serial.println(llindarMinReg);
+  Serial.print("llindarMax: ");
+  Serial.println(llindarMaxReg);
+}
+
+// s'executa en la interrupció del timer 0 per tornar a calcular el valor de l'humitat després de regar un cert temps.
+// Inicia la lectura de dades i modifica l'estat a llegintDades
+void bombaEngegada_to_llegintDades() {
+  iniciaLectura();
+  canviaEstat(llegintDades);
+}
+
+// inicia la lectura de dades d'humitat. Això implica engegar el modulator i les interrupcions del timer 2
+void iniciaLectura() {
+  modulator_set(true);
+  tmr2_set(64);
+  start_ADC();
+
+  dadesLlegidesFlag = false;
+  contenidor_valorHumitat = 0;
+  num_mostresHumitat_restants = num_mostresHumitat - 1;
+}
+
+// atura la lectura de dades d'humitat. Això implica aturar el modulator i les interrupcions del timer 2
+void aturaLectura () {
+  modulator_set(false);
+  tmr2_set(0);
+}
+
+// envia les dades d'humitat i de temperatura especificades en el format que espera el master ("d-H:100T:40")
+void enviaDades() {
+  String humitat_string = String(valorHumitat);
+  String temperatura_string = String(valorTemperatura);
+
+  sendMessage("d-H:" + humitat_string + "T:" + temperatura_string);
+}
+
+// envia l'estat del reg
+void enviaEstatReg(String estatReg) {
+  sendMessage("r-" + estatReg);
+}
+
+// engega la bomba
+void engegaBomba() {
+  digitalWrite(pin_bomba, HIGH);
+}
+
+// para la bomba
+void paraBomba() {
+  digitalWrite(pin_bomba, LOW);
+}
+
+// consulta l'estat de la bomba. True si està engegada i False si està parada
+bool comprovaReg() {
+  return (digitalRead(pin_bomba) == 1);
+}
+
+void setup() {
   Serial.begin(9600);
-  // adc
-  // bona
-  setup_ADC(1,5,16);//(adc_input,v_ref,adc_pre)
+  while (!Serial);
 
+  Serial.println("LoRa Slave");
 
-  //adc_input (0-5 (default=5),8 Tª, 14 1.1V, 15 GND 
-  //v_ref 0 (AREF), 1(1.1V), default=5 (5V)
-  //adc_pre 2,4,8,16(default),32,64,128
+  delay(5000);
 
-  // bona
-  start_ADC();//actual value will be read next sampling time
+  LoRa.setPins(10,5,2); //Per sensor
+  while(!LoRa.begin(866E6));
+  Serial.println("Starting LoRa!");
 
-  // tmr2 frequència de 8kHz
+  delay(200);
 
-// bona
-  setup_tmr2(124,8);//(ocr2a, tmr2_pre)
+  // iniciem el el timer0 per a la comunicació amb el master 
+  setup_tmr0(interval_s, iniciaComunicacioMaster);
 
-
-  //tmr2_pre 1,default=8,32,64,128,256,1024
-  //TMR2=prescaler*(ocr2a+1)*T_clk
-
+  // iniciem el modulator, el timer2 inicialment parat i l'ADC (utilitzats en la lectura de dades d'humitat)
   modulator_init();
-  
-  //setup_tmr0(TEMPS, activa_lectura);
-  //setup_tmr0(TEMPS, desperta);
+  setup_tmr2(124, 0);
+  setup_ADC(1,5,16);
 
-  // REGAR = pin_bind(&PORTD, 6, Output);
-  // LED_R = pin_bind(&PORTD, 4, Output);
-  pinMode(4, OUTPUT); //LED Blau
-  pinMode(6, OUTPUT); //BOMBA
-  //digitalWrite(6,LOW);
-
-  //Serial.println("Start lora init");
-  while (!lora_init());
-  //Serial.println("Lora init passed");
-
+  // per llegir la temperatura
   sensors.begin();
-  estat = inici;
-  sei();
+
+  //register the receive callback
+  LoRa.onReceive(onReceive);
+  //put the radio into receive mode
+  LoRa.receive();
+
+  // configurem el mode de baix consum
+  set_sleep_mode(SLEEP_MODE_IDLE);
+  sleep_enable();
+
+  // iniciem l'estat del slave a sleep
+  estat = sleep;
+
+  // inicialitzem els valors per defecte dels llindars de reg
+  llindarMinReg = 50;
+  llindarMaxReg = 75;
+
+  // inicialitzem el pin de la bomba com a sortida i activem el pin ENA (PC3 = A3/17)
+  pinMode(pin_bomba, OUTPUT);
+  pinMode(17, OUTPUT);
+  digitalWrite(17, HIGH);
+
 }
 
-void floatToList(float hum, float temp, uint8_t list[20]) {
-    char str_hum[7];
-    char str_temp[6];
-    dtostrf(hum, 3, 2, str_hum);
-    dtostrf(temp, 3, 1, str_temp);
-    int i;
-    int j;
-    list[0] = 'G';
-    list[1] = '3';
-    list[2] = ':';
-    for (i = 0; i < 7; i++) {
-        if (i < strlen(str_hum)) {
-            list[i+3] = str_hum[i];
-        } else {
-            list[i+3] = '/';
-            break;
+void loop() {
+  if (!comunicacioMasterFlag) {
+    sleep_mode();
+  }
+
+  if (estat == llegintDades) {
+    if (dadesLlegidesFlag) { // s'han acabat de llegir les dades
+      // en tots els casos aturem la lectura de dades
+      aturaLectura();
+
+      // càlcul del valor mitjà d'humitat
+      float avg_humitat = contenidor_valorHumitat / num_mostresHumitat;
+
+      // càlcul per obtenir l'humitat en percentatge
+      valorHumitat = ((valorMaximHumitat - avg_humitat)/(valorMaximHumitat - valorMinimHumitat))*100;
+      if (valorHumitat < 0) valorHumitat = 0;
+      else if (valorHumitat > 100) valorHumitat = 100;
+      Serial.println(valorHumitat);
+
+      // obtenim la temperatura
+      sensors.requestTemperatures();  // Solicitar la temperatura al sensor
+      valorTemperatura = sensors.getTempCByIndex(0);  // Obtener la temperatura en grados Celsius
+      Serial.println(valorTemperatura);
+
+      if (!comprovaReg()) { // la bomba està OFF
+        enviaDades(); // enviem els valors d'humitat llegits
+        // modifiquem l'estat
+        canviaEstat(wait_OK_comprovacioReg);
+      }
+      else { // la bomba està ON
+        if (valorHumitat < llindarMaxReg) { // seguim amb la bomba ON i llegintDades
+          setup_tmr0(interval_LecturaDades_bombaON_s, bombaEngegada_to_llegintDades);
+          // modifiquem l'estat
+          canviaEstat(bombaEngegada);
         }
-    }
-    for (j = 0; j < 6; j++) {
-        if (j < strlen(str_temp)) {
-            list[j+i+4] = str_temp[j];
-        } else {
-            list[j+i+4] = '\0';
+        else { // iniciem procediment per parar la bomba
+          enviaEstatReg("OFF");
+          // modifiquem l'estat
+          canviaEstat(wait_OK_bombaOFF);
         }
+      }
+      
     }
+  }
 }
 
-void activa_lectura(void){
-    tmr2_set(8);
-    modulator_set(true);
-}
+// per enviar un missatge al master per LoRa
+void sendMessage(String outgoing){
+  Serial.print("Sending packet: ");
+  Serial.println(msgId);
 
-void envia(void){
-  // pinMode(18, OUTPUT); //LED Blau
-  uint8_t miss[6];
-  miss[0] = 'G';
-  miss[1] = '3';
-  miss[2] = ':';
-  miss[3] = 'H';
-  miss[4] = '?';
-  miss[5] = '\0';
-  lora_putd(miss, 6);
-  //lora_putd(avg_str, 20);
-}
-
-void envia_resposta(void){
-  pinMode(18, OUTPUT); //LED Vermell
-  lora_putd(avg_str, 20);
-}
-
-void envia_temperatura(void){
-    //Serial.println("Prova");
-}
-
-// void envia_estat_bomba(void){
-//     if (estat_reg == regant) {
-//         uint8_t message[] = "G3:BOMBA ON\0";
-//         printf("%s\n", message);
-//         // lora_putd(message, 12);
-//     }
-//     else if (estat_reg == parat) {
-//         uint8_t message[] = "G3:BOMBA OFF\0";
-//         printf("%s\n", message);
-//         // lora_putd(message, 13);
-//     }
-// }
-
-void desperta(void){
-  uint8_t pregunta[6];
-  pregunta[0] = 'G';
-  pregunta[1] = '3';
-  pregunta[2] = ':';
-  pregunta[3] = 'P';
-  pregunta[4] = '?';
-  pregunta[5] = '\0';
-  lora_putd(pregunta, 6);
-}
-
-void mode_sleep(void){
-  int comptador = 0;
-  while(comptador < TEMPS){
-    LowPower.idle(SLEEP_1S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, SPI_OFF, USART0_OFF, TWI_OFF);
-    comptador += 1;
-  }  
-  estat = inici;
-}
-
-void timeout(void){
+  // send packet
+  LoRa.beginPacket();
+  LoRa.write(masterAddress, 4);
+  LoRa.write(localAddress, 4);
+  LoRa.write(msgId);
   
-  if (n_timeout > 5 && estat == inici){
-    stop_tmr0();
-    n_timeout = 0;
-    mode_sleep();
-  } else if (n_timeout <= 5 && estat == inici) {
-    desperta();
-    n_timeout += 1;
-  } else if (n_timeout > 5 && estat == resp_no){
-    stop_tmr0();
-    n_timeout = 0;
-    mode_sleep();
-  } else if (n_timeout <= 5 && estat == resp_no) {
-    envia();
-    n_timeout += 1;
-  } 
+  //uint8_t crc[4] = {0x00, 0x00, 0x00, 0x00}; // substituir per calcul de CRC
+  uint8_t crc[4];
+  calcularCRC(crc, outgoing.c_str(), outgoing.length());
+  LoRa.write(crc, 4);
+
+  LoRa.write(outgoing.length());
+
+  // xifrem el paquet
+  char outgoingXifrat[outgoing.length()];
+  encrypt_xor(outgoing.c_str(), outgoingXifrat, 0xAA);
+  
+  //LoRa.print(outgoing);
+  LoRa.print(outgoingXifrat);
+
+  LoRa.endPacket();
+
+  // guardem el missatge i el msgId enviat i marquem que no s'ha respòs
+  lastOutgoing = outgoing;
+  lastMsgId = msgId;
+  lastMsgRespos_flag = false;
+
+  // activem la repetició del missatge per si el master no respon
+  num_msgRep = 0;
+  setup_tmr0(intervalRepeticioMsg_s, repetirMissatge);
+
+  if (msgId < 255) msgId++;
+  else msgId = 0;
+
+  LoRa.onReceive(onReceive);
+  LoRa.receive();
 }
 
+// per tornar a enviar l'últim missatge enviat
+void repetirMissatge() {
+  // comprovem si s'ha respos a l'últim missatge
+  if (lastMsgRespos_flag) return;
 
-void loop(void){
-    register_lora_rx_event_callback( parse_lora );
-    // register_lora_rx_event_callback( envia_temperatura );
+  // comprovem si el missatge s'ha repetit més de 5 cops, en aquest cas tanquem la comunicació amb el master
+  num_msgRep++;
+  if (num_msgRep >= 5) {
+    acabaComunicacioMaster();
+    return;
+  }
+
+  Serial.print("Repeating packet: ");
+  Serial.println(lastMsgId);
+
+  // send packet
+  LoRa.beginPacket();
+  LoRa.write(masterAddress, 4);
+  LoRa.write(localAddress, 4);
+  LoRa.write(lastMsgId);
+  
+  //uint8_t crc[4] = {0x00, 0x00, 0x00, 0x00}; // substituir per calcul de CRC
+  uint8_t crc[4];
+  calcularCRC(crc, lastOutgoing.c_str(), lastOutgoing.length());
+  LoRa.write(crc, 4);
+
+  LoRa.write(lastOutgoing.length());
+
+  // xifrem el paquet
+  char lastOutgoingXifrat[lastOutgoing.length()];
+  encrypt_xor(lastOutgoing.c_str(), lastOutgoingXifrat, 0xAA);
+  
+  //LoRa.print(outgoing);
+  LoRa.print(lastOutgoingXifrat);
+ 
+  LoRa.endPacket();
+
+  // activem la repetició del missatge per si el master continua sense respondre
+  setup_tmr0(intervalRepeticioMsg_s, repetirMissatge);
+
+  LoRa.onReceive(onReceive);
+  LoRa.receive();
+}
+
+// Per llegir un missatge LoRa. S'executa quan es rep un missatge per LoRa
+void onReceive(int packetSize){
+  if (packetSize) {
     
-    while(1){
-      
-      if (estat == inici){
-        
-        if(n_timeout == 0){
-          //pinMode(18, OUTPUT);
-          desperta();
-          setup_tmr0(TEMPS/2,timeout);
-          n_timeout += 1;
+    // read packet header bytes
+    uint8_t recipient[4];
+    LoRa.readBytes(recipient, 4);
+    uint8_t senderAddress[4];
+    LoRa.readBytes(senderAddress, 4);
+    byte incomingMsgId = LoRa.read();
+    uint8_t incomingCRC[4];
+    LoRa.readBytes(incomingCRC, 4);
+    byte incomingLength = LoRa.read();
+
+    //comprovem si som el receptor del paquet
+    if (memcmp(recipient, localAddress, 4) != 0) {
+      Serial.println("Aquest missatge no és per mi.");
+      return;
+    }
+
+    String incoming = "";
+    // llegim el paquet rebut
+    while (LoRa.available()) {
+      incoming += (char)LoRa.read();
+    }
+
+    // desxifrem el paquet rebut
+    char incomingDesxifrat_array[incoming.length()];
+    decrypt_xor(incoming.c_str(), incomingDesxifrat_array, 0xAA);
+    String incomingDesxifrat = String(incomingDesxifrat_array);
+
+    // received a packet
+    Serial.print("Received packet: ");
+    //Serial.println(incoming);
+    Serial.println(incomingDesxifrat);
+    
+    // verifiquem el CRC rebut i la longitud indicada
+    if (!verificarCRC(incomingDesxifrat.c_str(), incomingLength, incomingCRC)) {
+      Serial.print("CRC incorrecte: ");
+      for (int i = 0; i < 4; i++)
+        Serial.print(incomingCRC[i], HEX);
+      return;
+      Serial.println();
+    }
+
+    // comprovem si s'està responent a l'últim missatge enviat
+    if (incomingMsgId == lastMsgId) { // resposta a l'últim missatge rebuda
+      lastMsgRespos_flag = true;
+      // aturem l'enviament del repetiment l'últim missatge
+      stop_tmr0();
+    }
+    else {      
+      Serial.println("El missatge no es correspon a l'últim missatge enviat");
+      return;
+    }
+
+    // realizem una acció o una altra depenent de l'estat en el que ens trobem
+    switch (estat) {
+      case sleep:
+        break;
+
+      case wait_resp:
+        Serial.println(num_comunicacions_llegirDades_restants);
+
+        if (strcmp(incomingDesxifrat.c_str(), "NOASS") == 0)  {
+          acabaComunicacioMaster();
         }
-        lora_event();
-      } else if (estat == resp_no){
-        if(n_timeout == 0){
-          stop_tmr0();
-          lora_event();
-          activa_lectura();
-          if(flag){
-            tmr2_set(0);
-            modulator_set(false);
-            avg_percent = ((240-avg_percent)/115)*100;
-            // floatToList(avg_percent, avg_str);
-            // envia_humitat();
-            sensors.requestTemperatures();  // Solicitar la temperatura al sensor
-            float temperatura = sensors.getTempCByIndex(0);  // Obtener la temperatura en grados Celsius
-            // if (temperatura == DEVICE_DISCONNECTED_C) {
-            //   Serial.print("Error Temperatura");
-            // } else {
-            floatToList(avg_percent, temperatura, avg_str);
+        else if (strcmp(incomingDesxifrat.c_str(), "NO") == 0)  {
+          if (num_comunicacions_llegirDades_restants == 0) {
+            num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades - 1;
+            iniciaLectura();
+            canviaEstat(llegintDades);
           }
+          else {
+            acabaComunicacioMaster();
+          }
+        }
+        else if (incomingDesxifrat.startsWith("CP-")) {
+          // Obtenim el llidarMin i el llindarMax a modificar
+          int posMin = incomingDesxifrat.indexOf("min:");
+          int posMax = incomingDesxifrat.indexOf("max:");
+          float llindarMin = incomingDesxifrat.substring(posMin + 4, posMax).toFloat();
+          float llindarMax = incomingDesxifrat.substring(posMax + 4).toFloat();  
+
+          canviaLlindars(llindarMin, llindarMax);
           
-            // Serial.println("Bloqueig");
-          //lora_putd(temp_str, 9);
-          envia();
-          setup_tmr0(TEMPS/2,timeout);
-          n_timeout += 1;
-            // }
-          //     // if (estat_reg == parat && avg_percent < llindar_min) {
-          //     //     pin_w(REGAR, true);
-          //     //     estat_reg = regant;
-          //     //     // envia_estat_bomba();
-          //     // }
-          //     // else if (estat_reg == regant && avg_percent > llindar_max) {
-          //     //     pin_w(REGAR, false);
-          //     //     estat_reg = parat;
-          //     //     // envia_estat_bomba();
-          //     // }
-            flag = false;
-            //LowPower.idle(SLEEP_1S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, SPI_OFF, USART0_OFF, TWI_OFF);
-            //mode_sleep();
-            //LowPower.idle(SLEEP_FOREVER, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_ON, SPI_OFF, USART0_OFF, TWI_OFF);
-            // activa_lectura();
+          if (num_comunicacions_llegirDades_restants == 0) {
+            num_comunicacions_llegirDades_restants = num_comunicacions_llegirDades - 1;
+            iniciaLectura();
+            canviaEstat(llegintDades);
+          }
+          else {
+            acabaComunicacioMaster();
+          }
         }
-        lora_event();
-      } else {
-        stop_tmr0();
-        n_timeout = 0;
-        mode_sleep();
-    }  
- }      
+        break;
+
+      case wait_OK_comprovacioReg:
+
+        if (strcmp(incomingDesxifrat.c_str(), "OK") == 0)  { // rebem la confirmació
+          
+          if (valorHumitat < llindarMinReg) {
+            enviaEstatReg("ON");
+            // modifiquem l'estat
+            canviaEstat(wait_OK_bombaON);
+          }
+
+          else {
+            enviaEstatReg("OFF");
+            // modifiquem l'estat
+            canviaEstat(wait_OK_bombaOFF);
+          }
+        }
+
+      case wait_OK_bombaON:
+
+        if (strcmp(incomingDesxifrat.c_str(), "OK") == 0)  { // rebem la confirmació
+          engegaBomba();
+          setup_tmr0(interval_LecturaDades_bombaON_s, bombaEngegada_to_llegintDades);
+          // modifiquem l'estat
+          canviaEstat(bombaEngegada);
+        }
+
+      case wait_OK_bombaOFF:
+
+        if (strcmp(incomingDesxifrat.c_str(), "OK") == 0)  { // rebem la confirmació
+          paraBomba();
+          acabaComunicacioMaster();
+        }
+
+      default:
+        Serial.println("Estat no reconegut");
+        break;
+    }
+    
+
+    LoRa.onReceive(onReceive);
+    LoRa.receive();
+  }
 }
 
+// interrupció del timer 2 que serveix per llegir les mostres d'humitat
 ISR(TIMER2_COMPA_vect){
-    value=read8_ADC();
+    uint8_t value=read8_ADC();
     start_ADC();
-    n--;
-    i += value;
-    if (n == 0){
-        avg = i/N;
-        flag = true;
-        avg_percent = avg;
-        n = N;
-        i = 0;
+    num_mostresHumitat_restants --;
+    contenidor_valorHumitat += value;
+    if (num_mostresHumitat_restants == 0){ // ja s'han llegit totes les mostres que es volien
+        dadesLlegidesFlag = 1;
     }
-}   
-
-
-void parse_lora( uint8_t * buf, uint8_t len, uint8_t status ) {
-  // Serial.println("Re parcero bro");
-	// if( status == IRQ_PAYLOAD_CRC_ERROR_MASK ) {
-	// 	return;
-	// }
-    if (buf[0] == 'G' && buf[1] == '3' && buf[2] == ':'){
-      // if(buf[3] == 'O' && buf[4] == 'K'){
-        
-      // }
-      
-        if(buf[3] == '?' && buf[4] == 'H'){
-          // Serial.println("Recepció petició d'humitat");
-          envia_resposta();
-        } else if (buf[3] == '?' && buf[4] == 'B'){
-            // envia_estat_bomba();
-            // Serial.println("Recepció petició d'estat bomba");
-            // envia();
-        } else if (buf[3] == 'N' && buf[4] == 'O' && estat == inici){
-          pinMode(18, OUTPUT);
-          n_timeout = 0;
-          estat = resp_no;
-        } else if (buf[3] == 'O' && buf[4] == 'K' && estat == resp_no){
-          //pinMode(18, OUTPUT);
-          n_timeout = 0;
-          estat = resposta_rebuda;
-        }
-    }
-}
+}  

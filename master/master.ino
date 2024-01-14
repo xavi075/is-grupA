@@ -1,177 +1,202 @@
-// Lora amb c
-#include "lora.h"
-#include "lora_mem.h"
-#include "spi.h"
+#include <SPI.h>
+#include <LoRa.h>
 
-// Lora amb ino
-// #include <SPI.h>
-// #include "LoRa.h"
+#include "secure.h"
 
+uint8_t localAddress[4] = {0x00, 0x00, 0x00, 0x00}; // adreça del dispositiu master
 
-
-#include <Arduino.h>
-//#include "modulator.h"
-// #include <avr/interrupt.h>
-// #include <avr/io.h>//it includes <avr/sfr_defs.h>, <avr/portpins.h>, <avr/common.h>, <avr/version.h>
-#include <stdint.h>
-// #include <stdbool.h>
-// #include <math.h>
-//#include "serial_device.h"
-#include "utils.h"
-#include <stdio.h>
-#include "printf2serial.h"
-// #include <avr/sleep.h>
-#include <util/delay.h>
-// #include <avr/wdt.h>
-#include <string.h>
-//#include "gpio_device.h"
-
-
-void parse_lora( uint8_t * buf, uint8_t len, uint8_t status );
-volatile bool flag = false;
-
-void setup(){
-  Serial.begin(9600);
-  
-  pinMode(8,OUTPUT);
-  pinMode(7,OUTPUT);
-  Serial.println("Start lora init");
-  while (!lora_init());
-  Serial.println("Lora init passed");
-  sei();
+// printa una adreça en hexadecimal pel port sèrie. Facilita la comunicació pel port sèrie
+void printaAddress(uint8_t address[4]) {
+  for (int i = 0; i < 4; i++) {
+    // ens assegurem que sempre es printin dos dígits hexadeximals
+    if (address[i] < 0x10) {
+      Serial.print("0");
+    }
+    Serial.print(address[i], HEX);
+  }
 }
 
-
-void loop(void){
-    register_lora_rx_event_callback( parse_lora );
-    while(1){
-      lora_event();
-      
-       if (Serial.available() > 0) {
-        
-        char valor = Serial.read(); 
-        delay(10);
-        char valor1 = Serial.read(); 
-        //delay(10);
-        char valor2 = Serial.read(); 
-        //delay(10);
-        //printf("%c\n", valor);
-        //printf("%c\n", valor1);
-        //printf("%c\n", valor2);
-
-        if(valor == 'N'){
-          
-          uint8_t missatge[6];
-          missatge[0] = 'G';
-          missatge[1] = '3';
-          missatge[2] = ':';
-          missatge[3] = 'N';
-          missatge[4] = 'O';
-          missatge[5] = '\0';
-          lora_putd(missatge, 6);
-          digitalWrite(7,HIGH);
-            //delay(100);
-            
-        }
-        /*if (valor == 'N'){
-          delay(10);
-          valor = Serial.read(); 
-         
-          
-          if (valor == 'O'){
-            cli();
-            delay(10);
-            
-            //valor = Serial.read();
-            //if(valor == '\n'){
-            
-            uint8_t missatge[6];
-            missatge[0] = 'G';
-            missatge[1] = '3';
-            missatge[2] = ':';
-            missatge[3] = 'N';
-            missatge[4] = 'O';
-            missatge[5] = '\0';
-            lora_putd(missatge, 6);
-            
-            //printf("G3:NO\n");
-            delay(100);
-            sei();
-            //register_lora_rx_event_callback( parse_lora );
-
-            digitalWrite(8,HIGH);
-            flag = true;
-            //}
-          }
-        } else if(valor == 'O') {
-          delay(10);
-          valor = Serial.read(); 
-         
-          
-          if (valor == 'K'){
-            cli();
-            delay(10);
-            digitalWrite(7,HIGH); 
-            //valor = Serial.read();
-            //if(valor == '\n'){
-            
-            uint8_t missatge[6];
-            missatge[0] = 'G';
-            missatge[1] = '3';
-            missatge[2] = ':';
-            missatge[3] = 'O';
-            missatge[4] = 'K';
-            missatge[5] = '\0';
-            lora_putd(missatge, 6);
-            
-            //printf("G3:NO\n");
-            delay(100);
-            sei();
-            //register_lora_rx_event_callback( parse_lora );
-
-            digitalWrite(8,HIGH);
-            flag = true;
-            //}
-          }*/
-        }
-        
-        //String inputString = Serial.readStringUntil('\n');
-        
-        //if (inputString == "?H"){
-        //  //Serial.println("G3:?H");
-        //  uint8_t message[] = "G3:?H\0";
-        //  lora_putd(message, 6);
-        //} else if (inputString == "?B"){
-        //  //Serial.println("G3:?B");
-        //  uint8_t message[] = "G3:?B\0";
-        //  lora_putd(message, 6);
-        //} else if (inputString == "NO"){
-        //  uint8_t message[] = "G3:NO\0";
-        //  lora_putd(message, 6);
-        //  delay(1000);
-        //  flag = true;
-        //}
-      //}
-    } 
- }
-
-void parse_lora( uint8_t * buf, uint8_t len, uint8_t status ) {
-  // Serial.println("Re parcero bro");
-	// if( status == IRQ_PAYLOAD_CRC_ERROR_MASK ) {
-	// 	return;
-	// }
-  //Serial.print("Per aqui");
-  //digitalWrite(8,HIGH);
+String llegeixPortSerie() {
+  while (!Serial.available());
   
-    if (buf[0] == 'G' && buf[1] == '3' && buf[2] == ':'){
-      //digitalWrite(8,HIGH);
-      //if(buf[3] == "P" && buf[4] == "?"){
-      //  flag = true;
-      //}
-      // uint8_t message[] = "G3:OK\0";
-      // lora_putd(message, 6);
-      
-      
-      printf("%s\n", &buf[3]);     
+  String resposta;
+  while (Serial.available() > 0) {
+    // Lee el byte recibido
+    char byteRecibido = Serial.read();
+
+    resposta.concat(byteRecibido);
+  }
+  Serial.print("RESPOSTA = ");
+  Serial.println(resposta);
+  return resposta;
+}
+
+void setup() {
+  Serial.begin(9600);
+  while (!Serial);
+
+  Serial.println("LoRa Master");
+
+  while(!LoRa.begin(866E6));
+  Serial.println("Starting LoRa!");
+
+  //register the receive callback
+  LoRa.onReceive(onReceive);
+  //put the radio into receive mode
+  LoRa.receive();
+  
+  pinMode(4,OUTPUT);
+  digitalWrite(4,HIGH);
+  delay(5000);
+}
+
+void loop() {
+}
+
+// per enviar un missatge a qualsevol esclau responent a un missatge per LoRa
+void sendMessage(uint8_t destinationAddress[], byte msgIdResponse, String outgoing){
+  // send packet
+  LoRa.beginPacket();
+  LoRa.write(destinationAddress, 4);
+  LoRa.write(localAddress, 4);
+  LoRa.write(msgIdResponse); //id del missatge que es respon
+
+  //uint8_t crc[4] = {0x00, 0x00, 0x00, 0x00}; // substituir per calcul de CRC
+  uint8_t crc[4];
+  calcularCRC(crc, outgoing.c_str(), outgoing.length());
+  LoRa.write(crc, 4);
+  
+  LoRa.write(outgoing.length());
+
+  // xifrem el paquet
+  char outgoingXifrat[outgoing.length()];
+  encrypt_xor(outgoing.c_str(), outgoingXifrat, 0xAA);
+  
+  //LoRa.print(outgoing);
+  LoRa.print(outgoingXifrat);
+  
+  LoRa.endPacket();
+  
+  Serial.print("Sending packet: ");
+  Serial.println(outgoing);
+}
+
+// Per llegir un missatge LoRa. S'executa quan es rep un missatge per LoRa
+void onReceive(int packetSize){
+  if (packetSize) {
+    
+    // read packet header bytes
+    uint8_t recipient[4];
+    LoRa.readBytes(recipient, 4);
+    uint8_t senderAddress[4];
+    LoRa.readBytes(senderAddress, 4);
+    byte incomingMsgId = LoRa.read();
+    uint8_t incomingCRC[4];
+    LoRa.readBytes(incomingCRC, 4);
+    byte incomingLength = LoRa.read();
+
+    //comprovem si som el receptor del paquet
+    if (memcmp(recipient, localAddress, 4) != 0) {
+      Serial.println("Aquest missatge no és per mi.");
+      return;
     }
+
+    String incoming = "";
+    // llegim el paquet enviat
+    while (LoRa.available()) {
+      incoming += (char)LoRa.read();
+    }
+
+    // desxifrem el paquet rebut
+    char incomingDesxifrat_array[incoming.length()];
+    decrypt_xor(incoming.c_str(), incomingDesxifrat_array, 0xAA);
+    String incomingDesxifrat = String(incomingDesxifrat_array);
+
+    // received a packet
+    Serial.print("Received packet: ");
+    //Serial.println(incoming);
+    Serial.println(incomingDesxifrat);
+    
+    // verifiquem el CRC rebut i la longitud indicada
+    if (!verificarCRC(incomingDesxifrat.c_str(), incomingLength, incomingCRC)) {
+      Serial.print("CRC incorrecte: ");
+      for (int i = 0; i < 4; i++)
+        Serial.print(incomingCRC[i], HEX);
+      return;
+    }
+
+    // si el missatge és "preg" demanem si hi ha algun canvi de paràmetres
+    if (strcmp(incomingDesxifrat.c_str(), "preg") == 0)  {
+      // enviem missatge pel port sèrie
+      Serial.print("?-");
+      printaAddress(senderAddress);
+      Serial.println();
+
+      // llegim la resposta
+      String resposta = llegeixPortSerie();
+    
+      // retornem la resposta al slave. La resposta pot ser "NO", "NOASS" o semblant a "CP-min:45.0max:70.6"
+      sendMessage(senderAddress, incomingMsgId, resposta.c_str());
+      Serial.print("Sending packet: ");
+      Serial.println(resposta);
+    }
+
+    // si el missatge comença per "d-", significa que ens està enviant les dades d'humitat i temperatura
+    else if (incomingDesxifrat.startsWith("d-"))  {
+      // trobem la posició de "H:" i de "T:"
+      int posH = incomingDesxifrat.indexOf("H:");
+      int posT = incomingDesxifrat.indexOf("T:"); 
+      
+      // comprova si el format és l'esperat
+      if (posH == -1 || posT == -1) return;
+
+      // enviem missatge pel port sèrie
+      Serial.print("d-");
+      printaAddress(senderAddress);
+      Serial.print("-");
+      Serial.print(incomingDesxifrat.substring(posH));
+      Serial.println();
+
+      // llegim la resposta
+      String resposta = llegeixPortSerie();
+      
+      // si ha anat bé, informem al slave enviant "OK"
+      if (strcmp(resposta.c_str(), "OK") == 0) {
+        sendMessage(senderAddress, incomingMsgId, resposta.c_str());
+        Serial.print("Sending packet: ");
+        Serial.println(resposta);
+      }
+
+    }
+
+    // si el missatge comença per -r, signigica que està enviant l'estat del reg
+    else if (incomingDesxifrat.startsWith("r-"))  {
+      // obtenim la subcadena posterior a "r-""
+      String estat = incomingDesxifrat.substring(2);
+
+      // enviem missatge pel port sèrie
+      Serial.print("r-");
+      printaAddress(senderAddress);
+      Serial.print("-");
+      Serial.print(estat);
+      Serial.println();
+
+      // llegim la resposta
+      String resposta = llegeixPortSerie();
+      Serial.print("RESPOSTA: ");
+      Serial.println(resposta);
+
+      // si ha anat bé, informem al slave enviant "OK"
+      if (strcmp(resposta.c_str(), "OK") == 0) {
+        sendMessage(senderAddress, incomingMsgId, resposta.c_str());
+        Serial.print("Sending packet: ");
+        Serial.println(resposta);
+      }
+
+    }
+
+    LoRa.receive();
+    LoRa.onReceive(onReceive);
+  }
+  Serial.println("LoRa Receiver");
 }
