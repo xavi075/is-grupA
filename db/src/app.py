@@ -23,7 +23,9 @@ from mariaDB import mariaDBConn
 import hashlib
 from datetime import datetime
 import pytz
+import random
 from flask_cors import CORS
+from enviar import send_email
 
 app = Flask(__name__)
 CORS(app, resources = {r"/*": {"origins": "https://is.ferrancasanovas.cat"}})
@@ -151,17 +153,42 @@ def inserirUsuari():
 
             db.començaTransaccio()
             try:
-                db.insert('usuaris', {'email': email, 'nomUsuari': nomUsuari, 'contrasenya_hash': hashedPwd, 'dataCreacioUsuari': dataCreacio_utc})
+                db.insert('usuaris', {'email': email, 'nomUsuari': nomUsuari, 'contrasenya_hash': hashedPwd, 'dataCreacioUsuari': dataCreacio_utc, 'usuariVerificat': False})
             except Exception as e:
                 db.rollback()
                 return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
             else:
                 db.commit()
                 idUsuariInsertat = db.executaQuery("SELECT id FROM usuaris WHERE email = %s", (email, ))[0][0]
-                return jsonify({'success': True, 'idUsuariInsertat': idUsuariInsertat})
+                try:
+                    codiVerificacio = random.randint(100000, 999999)
+                    db.insert('verificacioUsuaris', {'idUsuari': idUsuariInsertat, 'codiVerificacio': codiVerificacio})
+                    assumpte = "Confirmació de registre a Sensor Center"
+                    missatge = f""" 
+                    Hola {nomUsuari},
+
+                    Gràcies per registrar-te al nostre lloc web. Per completar el procès de registre, necessites afegir el següent codi de verificació a la pàgina corresponent.
+
+                    Codi de verificació: {codiVerificacio}
+
+                    Si no has so·licitat aquest codi, siusplau ignora aquest missatge.
+
+                    Gràcies i benvingut a Sensor Center!
+
+                    Atentament,
+                    L'equip de Sensor Center
+                    """
+                    send_email(assumpte, missatge, email)
+                except Exception as e:
+                    db.rollback()
+                    return jsonify({'success': False, 'error': f"Error al inserir dades: {str(e)}"}), 500
+                else:
+                    db.commit()
+                    return jsonify({'success': True, 'idUsuariInsertat': idUsuariInsertat})
     
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+
 
 @app.route('/inserirDispositiu', methods = ['POST'])
 def inserirDispositiu():
@@ -365,6 +392,67 @@ def verificaLogIn():
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+    
+    
+@app.route('/verificaUsuari', methods = ['POST'])
+def verificaUsuari():
+    """
+    Endpoint de Flask per verificar el codi de verificació d'un usuari.
+    """
+    try: 
+        try: 
+            dades_json = request.json
+        except Exception as e:
+            return jsonify({'success': False, 'error': f"No s'ha propocionat un JSON en la sol·licitud."}), 400
+
+        idUsuari = dades_json.get('idUsuari')
+        codiVerificacio = dades_json.get('codi')
+
+        if idUsuari is None:
+            return jsonify({'success': False, 'error': f"Camp 'idUsuari' no especificat en el JSON"}), 400
+        elif codiVerificacio is None:
+            return jsonify({'success': False, 'error': f"Camp 'codi' no especificat en el JSON"}), 400
+        
+        else:
+            try:
+                query = """SELECT codiVerificacio
+                        FROM verificacioUsuaris
+                        WHERE idUsuari = %s"""
+                params = (idUsuari, )
+                dades = db.executaQuery(query, params)
+                
+            except Exception as e:
+                return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
+                
+            else:
+                if len(dades) == 0:
+                    return jsonify({'success': False, 'error': f"No existeix cap usuari amb l'identificador especificat"}), 400
+                else:
+                    
+                    codiVerificacioCorrecte = dades[0][0]
+                    if (codiVerificacio == codiVerificacioCorrecte):
+                        db.començaTransaccio()
+                        try:
+                            db.update('usuaris', {'usuariVerificat': True}, "id = " + str(idUsuari))
+                        except Exception as e:
+                            db.rollback()
+                            return jsonify({'success': False, 'error': f"Error al actualitzar dades: {str(e)}"}), 500
+                        else:
+                            db.commit()
+                            try:
+                                db.delete('verificacioUsuaris', "idUsuari = " + str(idUsuari))
+                            except Exception as e:
+                                db.rollback()
+                                return jsonify({'success': False, 'error': f"Error al borrar dades: {str(e)}"}), 500    
+                            else:
+                                db.commit()  
+                                return jsonify({'success': True, 'usuariVerificat': True})
+                    else:
+                        return jsonify({'success': True, 'usuariVerificat': False})
+                        
+    except Exception as e:
+        return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
+    
 
 @app.route('/assignaDispositiuUsuari', methods = ['POST'])
 def assignaDispositiuUsuari():
@@ -609,15 +697,15 @@ def obtenirUsuaris():
 
         if idUsuari:
             # Obtenir les dades d'un usuari específic
-            query = "SELECT id, email, nomUsuari, dataCreacioUsuari FROM usuaris WHERE id = %s"
+            query = "SELECT id, email, nomUsuari, dataCreacioUsuari FROM usuaris WHERE id = %s AND usuariVerificat = True"
             params = (idUsuari, )
         elif emailUsuari:
             # Obtenir les dades d'un usuari específic
-            query = "SELECT id, email, nomUsuari, dataCreacioUsuari FROM usuaris WHERE email = %s"
+            query = "SELECT id, email, nomUsuari, dataCreacioUsuari FROM usuaris WHERE email = %s AND usuariVerificat = True"
             params = (emailUsuari, )
         else:
             # Obtenir les dades de tots els usuaris
-            query = "SELECT id, email, nomUsuari, dataCreacioUsuari FROM usuaris"
+            query = "SELECT id, email, nomUsuari, dataCreacioUsuari FROM usuaris WHERE usuariVerificat = True"
             params = ()
 
         try: 
