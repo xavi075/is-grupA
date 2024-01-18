@@ -28,7 +28,8 @@ from flask_cors import CORS
 from enviar import send_email
 
 app = Flask(__name__)
-CORS(app, resources = {r"/*": {"origins": "https://is.ferrancasanovas.cat"}})
+# CORS(app, resources = {r"/*": {"origins": "https://is.ferrancasanovas.cat"}})
+CORS(app, resources = {r"/*": {"origins": "https://localhost:5000"}})
 
 # connexió a la base de dades
 db = mariaDBConn('localhost', 'arnau', 'isgrupA', 'integracioSistemes')
@@ -373,7 +374,7 @@ def verificaLogIn():
             return jsonify({'success': False, 'error': f"Camp 'contrasenya' no especificat en el JSON"}), 400
         
         try: 
-            dades = db.executaQuery("SELECT id, contrasenya_hash FROM usuaris WHERE email = %s", (email, ))
+            dades = db.executaQuery("SELECT id, contrasenya_hash, usuariVerificat FROM usuaris WHERE email = %s", (email, ))
 
         except Exception as e:
             return jsonify({'success': False, 'error': f"Error al consultar dades: {str(e)}"}), 500
@@ -382,13 +383,15 @@ def verificaLogIn():
             if len(dades) == 0: # l'usuari no es troba a la bbdd
                 credencials = False
                 idUsuari = None
+                usuariVerificat = False
             else: # l'usuari es troba a la bbdd
                 idUsuari = dades[0][0]
                 contrasenya_hash_db = dades[0][1]
+                usuariVerificat = bool(dades[0][2])
                 contrasenya_hash_usuari = hashlib.sha256(contrasenya.encode()).hexdigest()
                 credencials = contrasenya_hash_db == contrasenya_hash_usuari
 
-            return jsonify({'success': True, 'credencialsTrobades': credencials, 'idUsuari': idUsuari})
+            return jsonify({'success': True, 'credencialsTrobades': credencials, 'idUsuari': idUsuari, 'usuariVerificat': usuariVerificat})
 
     except Exception as e:
         return jsonify({'success': False, 'error': f"Error no controlat: {str(e)}"}), 500
