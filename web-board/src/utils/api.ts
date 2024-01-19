@@ -1,6 +1,7 @@
-import { ILogged, ILastInfo, IUserDevices, IRegister, IData, IAvailableDevices, IWaterChanges, IProfile } from "./interfaces";
+import { ILogged, ILastInfo, IUserDevices, IRegister, IData, IAvailableDevices, IWaterChanges, IProfile, IVerify } from "./interfaces";
 
 const ENDPOINT = 'https://api.is.ferrancasanovas.cat';
+// const ENDPOINT = "http://localhost:5000"
 
 export function loginRequest(emailUsuari:string, contrasenya: string): Promise<ILogged> {
   return fetch(`${ENDPOINT}/verificaLogIn`, {
@@ -32,7 +33,20 @@ export function registerRequest(email:string, nomUsuari: string, contrasenya: st
   })
 }
 
-
+export function validateRegisterRequest(idUsuari:string, codi: string): Promise<IVerify> {
+    return fetch(`${ENDPOINT}/verificaUsuari`, {
+        method: 'POST',
+        headers: {
+            "Content-type": "application/json"
+        },
+        body: JSON.stringify({idUsuari, codi})
+    }).then(res => {
+        if (!res.ok) throw new Error('Response is not OK')
+        return res.json()
+    }).then( res => {
+        return res 
+    })
+  }
 
 export function changePwdRequest(idUsuari:string, contrasenya:string, novaContrasenya: string): Promise<ILogged> {
   //TO-DO: Assegurar destí de la request al servidor

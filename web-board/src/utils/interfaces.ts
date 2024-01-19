@@ -2,11 +2,17 @@ export interface ILogged {
   credencialsTrobades: boolean
   idUsuari: number | null
   success: boolean
+  usuariVerificat: boolean
 }
 
 export interface IRegister {
   success: boolean
   idUsuariInsertat: number | null
+}
+
+export interface IVerify {
+  success: boolean
+  usuariVerificat: boolean
 }
 
 export interface IChangedPwd {
