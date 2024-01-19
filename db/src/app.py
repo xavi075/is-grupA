@@ -172,7 +172,7 @@ def inserirUsuari():
 
                     Codi de verificació: {codiVerificacio}
 
-                    Si no has so·licitat aquest codi, siusplau ignora aquest missatge.
+                    Si no has sol·licitat aquest codi, siusplau ignora aquest missatge.
 
                     Gràcies i benvingut a Sensor Center!
 
