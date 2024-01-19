@@ -8,7 +8,14 @@ CREATE TABLE usuaris (
     email VARCHAR(100) UNIQUE NOT NULL,
     nomUsuari VARCHAR(50) NOT NULL,
     contrasenya_hash VARCHAR(64) NOT NULL,
-    dataCreacioUsuari DATETIME
+    dataCreacioUsuari DATETIME,
+    usuariVerificat BOOLEAN
+);
+
+CREATE TABLE verificacioUsuaris ( 
+    idUsuari INT PRIMARY KEY, 
+    codiVerificacio VARCHAR(6) NOT NULL,
+    FOREIGN KEY (idUsuari) REFERENCES usuaris (id) 
 );
 
 CREATE TABLE dispositius (
